@@ -28,6 +28,16 @@
             overflow-x: hidden;
         }
 
+        /* Animación de entrada suave */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         /* Barra de navegación estilo Apple */
         nav {
             position: fixed;
@@ -40,28 +50,50 @@
             z-index: 9999;
             border-bottom: 1px solid var(--border-color);
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            gap: 2.5rem;
+            padding: 0 40px;
         }
 
-        nav a {
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: -0.01em;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* SVG del logotipo personalizado basado en tu dibujo */
+        .custom-logo {
+            width: 32px;
+            height: 32px;
+            fill: #ffffff;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav a.link-item {
             color: var(--text-main);
             opacity: 0.8;
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 400;
-            letter-spacing: -0.01em;
             transition: opacity 0.3s ease;
         }
 
-        nav a:hover {
+        nav a.link-item:hover {
             opacity: 1;
         }
 
         /* Hero Principal */
         .hero {
-            padding-top: 140px;
+            padding-top: 160px;
             padding-bottom: 80px;
             text-align: center;
             max-width: 980px;
@@ -71,7 +103,7 @@
         }
 
         .hero .tagline {
-            color: #f5f5f7;
+            color: var(--text-sub);
             font-size: 0.9rem;
             font-weight: 600;
             letter-spacing: 0.1em;
@@ -110,7 +142,7 @@
             text-decoration: underline;
         }
 
-        /* Banner de imagen central */
+        /* Banner de imagen central con animación */
         .hero-banner {
             width: 100%;
             max-width: 1100px;
@@ -121,6 +153,12 @@
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hero-banner:hover {
+            transform: scale(1.01);
         }
 
         .hero-banner::after {
@@ -166,7 +204,7 @@
         }
 
         .bento-card:hover {
-            transform: scale(1.015);
+            transform: translateY(-6px);
             border-color: rgba(255, 255, 255, 0.3);
         }
 
@@ -177,7 +215,7 @@
 
         .card-content {
             z-index: 2;
-            max-width: 480px;
+            max-width: 520px;
         }
 
         .card-tag {
@@ -209,16 +247,17 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.4;
+            opacity: 0.35;
             z-index: 1;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.4s ease, transform 0.6s ease;
         }
 
         .bento-card:hover .card-img {
-            opacity: 0.55;
+            opacity: 0.5;
+            transform: scale(1.03);
         }
 
-        /* Footer estilo Apple */
+        /* Footer */
         footer {
             background: #111113;
             border-top: 1px solid var(--border-color);
@@ -234,7 +273,6 @@
             line-height: 1.5;
         }
 
-        /* Responsivo para celulares */
         @media (max-width: 768px) {
             .bento-grid {
                 grid-template-columns: 1fr;
@@ -242,66 +280,75 @@
             .bento-card.full-width {
                 grid-column: span 1;
             }
-            nav {
-                gap: 1.2rem;
+            .nav-links {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navegación -->
+    <!-- Navegación con tu Logotipo en blanco estilizado -->
     <nav>
-        <a href="#inicio">VP TECNOLOGY</a>
-        <a href="#avances">Avances</a>
-        <a href="#innovacion">Innovación</a>
-        <a href="#contacto">Contacto</a>
+        <a href="#inicio" class="nav-logo">
+            <!-- Logotipo vectorial basado en tu trazo (VP) -->
+            <svg class="custom-logo" viewBox="0 0 100 100">
+                <path d="M15,80 L35,20 L45,20 L65,80 M25,55 L55,55" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M60,20 L60,80 C60,80 85,80 85,50 C85,20 60,20 60,20 Z" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            VP TECNOLOGY
+        </a>
+        <div class="nav-links">
+            <a href="#procesador" class="link-item">X Power Ultimate</a>
+            <a href="#ia" class="link-item">IAM</a>
+            <a href="#os" class="link-item">LAN OS</a>
+        </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero" id="inicio">
+    <!-- Hero Section con animación -->
+    <section class="hero fade-in" id="inicio">
         <p class="tagline">VP TECNOLOGY CORPORATION</p>
-        <h1>Avance Pro. <br>El futuro empieza hoy.</h1>
-        <p>Diseñamos arquitectura tecnológica de última generación para transformar industrias y redefinir los límites de lo posible.</p>
-        <a href="#avances" class="cta-link">Explorar los avances &gt;</a>
+        <h1>Innovación Absoluta. <br>El futuro ya está aquí.</h1>
+        <p>Conoce la nueva generación de ingeniería tecnológica impulsada por inteligencia artificial y rendimiento extremo.</p>
+        <a href="#procesador" class="cta-link">Descubrir las novedades &gt;</a>
     </section>
 
     <!-- Banner Principal -->
     <div class="hero-banner"></div>
 
     <!-- Sección de Avances (Bento Grid) -->
-    <div class="container" id="avances">
-        <h2 class="section-title">Innovaciones del año.</h2>
+    <div class="container" id="procesador">
+        <h2 class="section-title">Avances de alto rendimiento.</h2>
 
         <div class="bento-grid">
             
-            <!-- Card 1 (Ancho completo) -->
-            <div class="bento-card full-width">
-                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80" alt="IA Operativa" class="card-img">
+            <!-- Card 1: X POWER ULTIMATE (Ancho completo) -->
+            <div class="bento-card full-width" id="procesador">
+                <img src="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1600&q=80" alt="X POWER ULTIMATE" class="card-img">
+                <div class="card-content">
+                    <p class="card-tag">Procesador de Vanguardia</p>
+                    <h3 class="card-title">X POWER ULTIMATE</h3>
+                    <p class="card-desc">Arquitectura de procesamiento cuántico-híbrido diseñada para superar cualquier límite de velocidad, eficiencia energética y computación gráfica simultánea.</p>
+                </div>
+            </div>
+
+            <!-- Card 2: IAM (Inteligencia Artificial) -->
+            <div class="bento-card" id="ia">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" alt="IAM Inteligencia Artificial" class="card-img">
                 <div class="card-content">
                     <p class="card-tag">Inteligencia Artificial</p>
-                    <h3 class="card-title">Motor Neuronal VP-1</h3>
-                    <p class="card-desc">Procesamiento masivo en tiempo real con algoritmos adaptativos capaces de predecir patrones industriales complejos instantáneamente.</p>
+                    <h3 class="card-title">IAM</h3>
+                    <p class="card-desc">Un núcleo neuronal autónomo capaz de aprender, anticiparse a tus necesidades y optimizar cada proceso del sistema en tiempo real.</p>
                 </div>
             </div>
 
-            <!-- Card 2 -->
-            <div class="bento-card">
-                <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80" alt="Criptografía Cuántica" class="card-img">
+            <!-- Card 3: LAN OS (Sistema Operativo) -->
+            <div class="bento-card" id="os">
+                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80" alt="LAN OS" class="card-img">
                 <div class="card-content">
-                    <p class="card-tag">Seguridad</p>
-                    <h3 class="card-title">Encriptación Cuántica</h3>
-                    <p class="card-desc">Redes de telecomunicaciones ultra seguras a prueba de cualquier intento de vulneración de datos.</p>
-                </div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="bento-card">
-                <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80" alt="Robótica Autónoma" class="card-img">
-                <div class="card-content">
-                    <p class="card-tag">Autonomía</p>
-                    <h3 class="card-title">Sistemas Autónomos</h3>
-                    <p class="card-desc">Integración perfecta de hardware y software inteligente para la gestión de robótica e infraestructura global.</p>
+                    <p class="card-tag">Sistema Operativo</p>
+                    <h3 class="card-title">LAN OS</h3>
+                    <p class="card-desc">Una interfaz minimalista, ultra fluida y segura, diseñada específicamente para fusionar el hardware del X Power Ultimate con la potencia de IAM.</p>
                 </div>
             </div>
 
@@ -311,7 +358,7 @@
     <!-- Footer -->
     <footer>
         <p>Copyright &copy; 2026 VP TECNOLOGY CORPORATION. Todos los derechos reservados.</p>
-        <p>Proyecto académico de tecnología. Diseñado con estándares de interfaz moderna.</p>
+        <p>Proyecto académico de tecnología presentado con estándares de diseño avanzados y animaciones fluidas.</p>
     </footer>
 
 </body>
