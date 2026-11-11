@@ -28,7 +28,6 @@
             overflow-x: hidden;
         }
 
-        /* Animación de entrada suave */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -66,10 +65,9 @@
             text-decoration: none;
         }
 
-        /* SVG del logotipo personalizado basado en tu dibujo */
         .custom-logo {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             fill: #ffffff;
         }
 
@@ -142,7 +140,7 @@
             text-decoration: underline;
         }
 
-        /* Banner de imagen central con animación */
+        /* Banner central */
         .hero-banner {
             width: 100%;
             max-width: 1100px;
@@ -168,7 +166,7 @@
             background: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
         }
 
-        /* Grilla de Avances estilo Bento Box */
+        /* Bento Grid */
         .section-title {
             text-align: center;
             font-size: 2.5rem;
@@ -288,10 +286,9 @@
 </head>
 <body>
 
-    <!-- Navegación con tu Logotipo en blanco estilizado -->
+    <!-- Navegación con logotipo personalizado en blanco -->
     <nav>
         <a href="#inicio" class="nav-logo">
-            <!-- Logotipo vectorial basado en tu trazo (VP) -->
             <svg class="custom-logo" viewBox="0 0 100 100">
                 <path d="M15,80 L35,20 L45,20 L65,80 M25,55 L55,55" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M60,20 L60,80 C60,80 85,80 85,50 C85,20 60,20 60,20 Z" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -305,7 +302,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section con animación -->
+    <!-- Hero Section -->
     <section class="hero fade-in" id="inicio">
         <p class="tagline">VP TECNOLOGY CORPORATION</p>
         <h1>Innovación Absoluta. <br>El futuro ya está aquí.</h1>
@@ -316,14 +313,14 @@
     <!-- Banner Principal -->
     <div class="hero-banner"></div>
 
-    <!-- Sección de Avances (Bento Grid) -->
+    <!-- Sección de Avances -->
     <div class="container" id="procesador">
         <h2 class="section-title">Avances de alto rendimiento.</h2>
 
         <div class="bento-grid">
             
-            <!-- Card 1: X POWER ULTIMATE (Ancho completo) -->
-            <div class="bento-card full-width" id="procesador">
+            <!-- X POWER ULTIMATE -->
+            <div class="bento-card full-width">
                 <img src="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1600&q=80" alt="X POWER ULTIMATE" class="card-img">
                 <div class="card-content">
                     <p class="card-tag">Procesador de Vanguardia</p>
@@ -332,7 +329,7 @@
                 </div>
             </div>
 
-            <!-- Card 2: IAM (Inteligencia Artificial) -->
+            <!-- IAM -->
             <div class="bento-card" id="ia">
                 <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" alt="IAM Inteligencia Artificial" class="card-img">
                 <div class="card-content">
@@ -342,7 +339,7 @@
                 </div>
             </div>
 
-            <!-- Card 3: LAN OS (Sistema Operativo) -->
+            <!-- LAN OS -->
             <div class="bento-card" id="os">
                 <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80" alt="LAN OS" class="card-img">
                 <div class="card-content">
