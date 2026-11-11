@@ -37,7 +37,7 @@
             animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Barra de navegación estilo Apple */
+        /* Barra de navegación centrada y limpia sin logo */
         nav {
             position: fixed;
             top: 0;
@@ -49,31 +49,10 @@
             z-index: 9999;
             border-bottom: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            padding: 0 40px;
-        }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            letter-spacing: -0.01em;
-            color: #fff;
-            text-decoration: none;
-        }
-
-        .custom-logo {
-            width: 28px;
-            height: 28px;
-            fill: #ffffff;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
+            gap: 2.5rem;
+            padding: 0 20px;
         }
 
         nav a.link-item {
@@ -140,14 +119,14 @@
             text-decoration: underline;
         }
 
-        /* Banner central */
+        /* Banner central con colores mejorados */
         .hero-banner {
             width: 100%;
             max-width: 1100px;
             height: 480px;
             margin: 40px auto 80px auto;
             border-radius: 24px;
-            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #7b2cbf 100%);
             border: 1px solid var(--border-color);
             position: relative;
             overflow: hidden;
@@ -157,13 +136,6 @@
 
         .hero-banner:hover {
             transform: scale(1.01);
-        }
-
-        .hero-banner::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
         }
 
         /* Bento Grid */
@@ -278,28 +250,24 @@
             .bento-card.full-width {
                 grid-column: span 1;
             }
-            .nav-links {
-                display: none;
+            nav {
+                gap: 1.2rem;
+                padding: 0 10px;
+            }
+            nav a.link-item {
+                font-size: 0.75rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navegación con logotipo personalizado en blanco -->
+    <!-- Navegación limpia sin logotipo -->
     <nav>
-        <a href="#inicio" class="nav-logo">
-            <svg class="custom-logo" viewBox="0 0 100 100">
-                <path d="M15,80 L35,20 L45,20 L65,80 M25,55 L55,55" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M60,20 L60,80 C60,80 85,80 85,50 C85,20 60,20 60,20 Z" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            VP TECNOLOGY
-        </a>
-        <div class="nav-links">
-            <a href="#procesador" class="link-item">X Power Ultimate</a>
-            <a href="#ia" class="link-item">IAM</a>
-            <a href="#os" class="link-item">LAN OS</a>
-        </div>
+        <a href="#inicio" class="link-item">VP TECNOLOGY</a>
+        <a href="#procesador" class="link-item">X Power Ultimate</a>
+        <a href="#ia" class="link-item">IAM</a>
+        <a href="#os" class="link-item">LAN OS</a>
     </nav>
 
     <!-- Hero Section -->
