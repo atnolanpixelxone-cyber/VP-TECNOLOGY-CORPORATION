@@ -7,8 +7,8 @@
     <style>
         :root {
             --bg-dark: #000000;
-            --card-bg: rgba(22, 22, 23, 0.8);
-            --border-color: rgba(255, 255, 255, 0.1);
+            --card-bg: #161617;
+            --border-color: #333336;
             --accent-blue: #2997ff;
             --text-main: #f5f5f7;
             --text-sub: #86868b;
@@ -28,302 +28,387 @@
             overflow-x: hidden;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Animación de fundido y elevación idéntica a Apple */
+        @keyframes appleFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .fade-in {
-            animation: fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-hero {
+            animation: appleFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Barra de navegación centrada y limpia sin logo */
+        /* Barra de navegación clásica de Apple (Global Nav) */
         nav {
             position: fixed;
             top: 0;
+            left: 0;
             width: 100%;
             height: 48px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.82);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             z-index: 9999;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 2.5rem;
-            padding: 0 20px;
+            gap: 3.5rem;
         }
 
-        nav a.link-item {
-            color: var(--text-main);
+        nav a {
+            color: #f5f5f7;
             opacity: 0.8;
             text-decoration: none;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 400;
-            transition: opacity 0.3s ease;
+            letter-spacing: -0.01em;
+            transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        nav a.link-item:hover {
+        nav a:hover {
             opacity: 1;
         }
 
-        /* Hero Principal */
+        /* Sección Hero Principal estilo Apple */
         .hero {
-            padding-top: 160px;
-            padding-bottom: 80px;
+            padding-top: 150px;
+            padding-bottom: 60px;
             text-align: center;
-            max-width: 980px;
+            max-width: 1000px;
             margin: 0 auto;
             padding-left: 20px;
             padding-right: 20px;
         }
 
-        .hero .tagline {
-            color: var(--text-sub);
-            font-size: 0.9rem;
+        .hero .eyebrow {
+            font-size: 1.1rem;
             font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 10px;
+            color: #f5f5f7;
+            letter-spacing: 0.005em;
+            margin-bottom: 6px;
         }
 
         .hero h1 {
-            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            font-size: clamp(3rem, 7vw, 5.2rem);
             font-weight: 600;
             letter-spacing: -0.015em;
             line-height: 1.05;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             background: linear-gradient(180deg, #ffffff 0%, #a1a1a6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .hero p {
-            font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+        .hero .subhead {
+            font-size: clamp(1.3rem, 2.8vw, 1.8rem);
+            font-weight: 400;
             color: var(--text-sub);
-            font-weight: 400;
-            max-width: 680px;
-            margin: 0 auto 30px auto;
-            line-height: 1.38;
+            max-width: 750px;
+            margin: 0 auto 25px auto;
+            line-height: 1.35;
+            letter-spacing: 0.008em;
         }
 
-        .cta-link {
-            color: var(--accent-blue);
-            font-size: 1.2rem;
+        .hero-cta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn-apple {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 980px;
             text-decoration: none;
+            font-size: 0.85rem;
             font-weight: 400;
+            transition: background-color 0.2s ease;
         }
 
-        .cta-link:hover {
+        .btn-apple:hover {
+            background-color: #0077ed;
+        }
+
+        .link-learn {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 1.05rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s ease;
+        }
+
+        .link-learn:hover {
             text-decoration: underline;
         }
 
-        /* Banner central con colores mejorados */
-        .hero-banner {
+        /* Banner Multimedia Estilo Apple Product Launch */
+        .product-banner {
             width: 100%;
-            max-width: 1100px;
-            height: 480px;
-            margin: 40px auto 80px auto;
-            border-radius: 24px;
-            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #7b2cbf 100%);
-            border: 1px solid var(--border-color);
+            max-width: 1280px;
+            height: 550px;
+            margin: 30px auto 70px auto;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background-size: cover;
+            background-position: center;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 60px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
             transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .hero-banner:hover {
-            transform: scale(1.01);
+        .product-banner:hover {
+            transform: scale(1.008);
         }
 
-        /* Bento Grid */
-        .section-title {
-            text-align: center;
-            font-size: 2.5rem;
+        .product-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 100%);
+            z-index: 1;
+        }
+
+        .banner-content {
+            z-index: 2;
+            max-width: 600px;
+        }
+
+        .banner-content h2 {
+            font-size: 2.8rem;
             font-weight: 600;
-            margin-bottom: 50px;
             letter-spacing: -0.01em;
+            margin-bottom: 10px;
+            color: #ffffff;
         }
 
-        .container {
-            max-width: 1100px;
+        .banner-content p {
+            font-size: 1.2rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        /* Estilo Grid Bento (Diseño de Productos Apple Moderno) */
+        .grid-section {
+            max-width: 1280px;
             margin: 0 auto 100px auto;
             padding: 0 20px;
         }
 
-        .bento-grid {
+        .section-header {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            margin-bottom: 40px;
+            color: #f5f5f7;
+        }
+
+        .bento-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 24px;
         }
 
-        .bento-card {
-            background: var(--card-bg);
+        .bento-box {
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 40px;
+            border-radius: 32px;
+            padding: 50px;
+            min-height: 480px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 420px;
             position: relative;
             overflow: hidden;
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease;
         }
 
-        .bento-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(255, 255, 255, 0.3);
+        .bento-box:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.35);
         }
 
-        .bento-card.full-width {
+        .bento-box.wide {
             grid-column: span 2;
-            min-height: 480px;
+            min-height: 520px;
         }
 
-        .card-content {
+        .box-info {
             z-index: 2;
-            max-width: 520px;
+            max-width: 500px;
         }
 
-        .card-tag {
-            color: var(--text-sub);
+        .box-tag {
             font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
+            letter-spacing: 0.08em;
+            color: var(--text-sub);
+            margin-bottom: 10px;
         }
 
-        .card-title {
-            font-size: 2.2rem;
+        .box-title {
+            font-size: 2.5rem;
             font-weight: 600;
+            letter-spacing: -0.01em;
             line-height: 1.1;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             color: #f5f5f7;
         }
 
-        .card-desc {
+        .box-desc {
+            font-size: 1.15rem;
             color: var(--text-sub);
-            font-size: 1.05rem;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
-        .card-img {
+        .box-bg-img {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.35;
+            opacity: 0.4;
             z-index: 1;
-            transition: opacity 0.4s ease, transform 0.6s ease;
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
         }
 
-        .bento-card:hover .card-img {
-            opacity: 0.5;
-            transform: scale(1.03);
+        .bento-box:hover .box-bg-img {
+            transform: scale(1.04);
+            opacity: 0.55;
         }
 
-        /* Footer */
+        /* Footer Oficial Estilo Apple */
         footer {
-            background: #111113;
-            border-top: 1px solid var(--border-color);
-            padding: 40px 20px;
-            text-align: center;
+            background-color: #1d1d1f;
             color: var(--text-sub);
-            font-size: 0.8rem;
-        }
-
-        footer p {
-            max-width: 980px;
-            margin: 0 auto 10px auto;
+            padding: 40px 20px;
+            font-size: 0.75rem;
             line-height: 1.5;
+            border-top: 1px solid var(--border-color);
         }
 
+        .footer-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .footer-content p {
+            margin-bottom: 8px;
+        }
+
+        /* Responsivo para Móviles */
         @media (max-width: 768px) {
-            .bento-grid {
+            .bento-container {
                 grid-template-columns: 1fr;
             }
-            .bento-card.full-width {
+            .bento-box.wide {
                 grid-column: span 1;
             }
             nav {
-                gap: 1.2rem;
+                gap: 1.5rem;
                 padding: 0 10px;
             }
-            nav a.link-item {
-                font-size: 0.75rem;
+            nav a {
+                font-size: 0.7rem;
+            }
+            .product-banner {
+                height: 420px;
+                padding: 30px;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navegación limpia sin logotipo -->
+    <!-- Barra de Navegación Global Estilo Apple -->
     <nav>
-        <a href="#inicio" class="link-item">VP TECNOLOGY</a>
-        <a href="#procesador" class="link-item">X Power Ultimate</a>
-        <a href="#ia" class="link-item">IAM</a>
-        <a href="#os" class="link-item">LAN OS</a>
+        <a href="#inicio">VP TECNOLOGY</a>
+        <a href="#procesador">X Power Ultimate</a>
+        <a href="#ia">IAM</a>
+        <a href="#os">LAN OS</a>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero fade-in" id="inicio">
-        <p class="tagline">VP TECNOLOGY CORPORATION</p>
-        <h1>Innovación Absoluta. <br>El futuro ya está aquí.</h1>
-        <p>Conoce la nueva generación de ingeniería tecnológica impulsada por inteligencia artificial y rendimiento extremo.</p>
-        <a href="#procesador" class="cta-link">Descubrir las novedades &gt;</a>
+    <!-- Sección Hero / Lanzamiento Principal -->
+    <section class="hero animate-hero" id="inicio">
+        <p class="eyebrow">VP TECNOLOGY CORPORATION</p>
+        <h1>Innovación Absoluta.</h1>
+        <p class="subhead">Diseñado para redefinir cada estándar de la industria. Conoce la potencia absoluta del mañana.</p>
+        <div class="hero-cta">
+            <a href="#procesador" class="link-learn">Explorar todas las novedades &gt;</a>
+        </div>
     </section>
 
-    <!-- Banner Principal -->
-    <div class="hero-banner"></div>
+    <!-- Banner Visual Principal (Estilo Keynote) -->
+    <div class="product-banner animate-hero">
+        <div class="banner-content">
+            <h2>El futuro en tus manos.</h2>
+            <p>Ingeniería de precisión milimétrica combinada con inteligencia artificial autónoma y hardware de rendimiento extremo.</p>
+        </div>
+    </div>
 
-    <!-- Sección de Avances -->
-    <div class="container" id="procesador">
-        <h2 class="section-title">Avances de alto rendimiento.</h2>
+    <!-- Sección Grid Bento de Innovaciones -->
+    <div class="grid-section" id="procesador">
+        <h2 class="section-header">Diseñado para sorprender.</h2>
 
-        <div class="bento-grid">
+        <div class="bento-container">
             
-            <!-- X POWER ULTIMATE -->
-            <div class="bento-card full-width">
-                <img src="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1600&q=80" alt="X POWER ULTIMATE" class="card-img">
-                <div class="card-content">
-                    <p class="card-tag">Procesador de Vanguardia</p>
-                    <h3 class="card-title">X POWER ULTIMATE</h3>
-                    <p class="card-desc">Arquitectura de procesamiento cuántico-híbrido diseñada para superar cualquier límite de velocidad, eficiencia energética y computación gráfica simultánea.</p>
+            <!-- X POWER ULTIMATE (Ancho completo superior) -->
+            <div class="bento-box wide">
+                <img src="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1600&q=80" alt="X Power Ultimate" class="box-bg-img">
+                <div class="box-info">
+                    <p class="box-tag">Procesador de Vanguardia</p>
+                    <h3 class="box-title">X POWER ULTIMATE</h3>
+                    <p class="box-desc">La arquitectura de procesamiento más avanzada jamás creada. Capaz de gestionar billones de operaciones por segundo con una eficiencia energética sin precedentes y una potencia gráfica absoluta.</p>
                 </div>
             </div>
 
-            <!-- IAM -->
-            <div class="bento-card" id="ia">
-                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" alt="IAM Inteligencia Artificial" class="card-img">
-                <div class="card-content">
-                    <p class="card-tag">Inteligencia Artificial</p>
-                    <h3 class="card-title">IAM</h3>
-                    <p class="card-desc">Un núcleo neuronal autónomo capaz de aprender, anticiparse a tus necesidades y optimizar cada proceso del sistema en tiempo real.</p>
+            <!-- IAM (Inteligencia Artificial) -->
+            <div class="bento-box" id="ia">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" alt="IAM Inteligencia Artificial" class="box-bg-img">
+                <div class="box-info">
+                    <p class="box-tag">Inteligencia Artificial</p>
+                    <h3 class="box-title">IAM</h3>
+                    <p class="box-desc">Un núcleo neuronal inteligente que aprende de tus hábitos, acelera tus flujos de trabajo y anticipa cada acción de forma completamente privada y segura.</p>
                 </div>
             </div>
 
-            <!-- LAN OS -->
-            <div class="bento-card" id="os">
-                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80" alt="LAN OS" class="card-img">
-                <div class="card-content">
-                    <p class="card-tag">Sistema Operativo</p>
-                    <h3 class="card-title">LAN OS</h3>
-                    <p class="card-desc">Una interfaz minimalista, ultra fluida y segura, diseñada específicamente para fusionar el hardware del X Power Ultimate con la potencia de IAM.</p>
+            <!-- LAN OS (Sistema Operativo) -->
+            <div class="bento-box" id="os">
+                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80" alt="LAN OS" class="box-bg-img">
+                <div class="box-info">
+                    <p class="box-tag">Sistema Operativo</p>
+                    <h3 class="box-title">LAN OS</h3>
+                    <p class="box-desc">Fluido, minimalista y extraordinariamente seguro. Una interfaz diseñada a la perfección para fusionar el poder de X Power Ultimate con la intuición de la IA.</p>
                 </div>
             </div>
 
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer Oficial Estilo Apple -->
     <footer>
-        <p>Copyright &copy; 2026 VP TECNOLOGY CORPORATION. Todos los derechos reservados.</p>
-        <p>Proyecto académico de tecnología presentado con estándares de diseño avanzados y animaciones fluidas.</p>
+        <div class="footer-content">
+            <p>Copyright &copy; 2026 VP TECNOLOGY CORPORATION. Todos los derechos reservados.</p>
+            <p>Este sitio web forma parte de un proyecto tecnológico avanzado simulado con estándares de interfaz de usuario de alta fidelidad.</p>
+        </div>
     </footer>
 
 </body>
