@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -64,7 +63,7 @@
             opacity: 1;
         }
 
-        /* ----- SUBMENU LOCAL DEL PRODUCTO (Estilo Apple) ----- */
+        /* ----- SUBMENU LOCAL DEL PRODUCTO ----- */
         .local-nav {
             position: fixed;
             top: 44px;
@@ -79,11 +78,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 15%;
+            padding: 0 12%;
         }
 
         .local-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             letter-spacing: -0.015em;
         }
@@ -104,7 +103,7 @@
         .btn-buy {
             background-color: var(--accent-blue);
             color: #ffffff !important;
-            padding: 5px 12px;
+            padding: 5px 14px;
             border-radius: 980px;
             font-size: 0.75rem;
             opacity: 1 !important;
@@ -133,7 +132,7 @@
 
         /* ----- SECCIÓN HERO ----- */
         .hero {
-            padding-top: 160px;
+            padding-top: 170px;
             padding-bottom: 40px;
             text-align: center;
             max-width: 980px;
@@ -171,13 +170,6 @@
             line-height: 1.35;
         }
 
-        .hero-cta {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-        }
-
         .link-cta {
             color: var(--accent-blue);
             font-size: 1.1rem;
@@ -188,27 +180,35 @@
             text-decoration: underline;
         }
 
-        /* ----- BANNER DE LANZAMIENTO PRINCIPAL ----- */
+        /* ----- BANNER DE LANZAMIENTO PRINCIPAL (Con imagen de fondo de alto impacto) ----- */
         .hero-showcase {
             width: 100%;
             max-width: 1240px;
-            height: 580px;
+            height: 600px;
             margin: 40px auto 100px auto;
-            border-radius: 30px;
-            background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+            border-radius: 36px;
+            background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
             border: 1px solid var(--border-subtle);
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 60px;
+            padding: 70px;
             box-shadow: 0 40px 100px rgba(0,0,0,0.9);
             transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .hero-showcase:hover {
             transform: scale(1.006);
+        }
+
+        .hero-showcase::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.9) 100%);
+            z-index: 1;
         }
 
         .showcase-text {
@@ -254,9 +254,9 @@
         .bento-card {
             background-color: var(--bg-dark-gray);
             border: 1px solid var(--border-subtle);
-            border-radius: 30px;
-            padding: 50px;
-            min-height: 500px;
+            border-radius: 36px;
+            padding: 60px;
+            min-height: 520px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -272,12 +272,12 @@
 
         .bento-card.wide {
             grid-column: span 2;
-            min-height: 540px;
+            min-height: 560px;
         }
 
         .card-info {
             z-index: 2;
-            max-width: 520px;
+            max-width: 540px;
         }
 
         .card-tag {
@@ -295,10 +295,11 @@
             letter-spacing: -0.01em;
             line-height: 1.1;
             margin-bottom: 14px;
+            color: #ffffff;
         }
 
         .card-desc {
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             color: var(--text-gray);
             line-height: 1.45;
         }
@@ -309,17 +310,31 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.35;
+            opacity: 0.45;
             z-index: 1;
             transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
         }
 
         .bento-card:hover .card-image-bg {
             transform: scale(1.04);
-            opacity: 0.5;
+            opacity: 0.6;
         }
 
-        /* ----- FOOTER DETALLADO ESTILO APPLE ----- */
+        /* Oscurecer un poco la parte inferior de las tarjetas con imagen para que el texto resalte */
+        .bento-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.2) 30%, rgba(0,0,0,0.85) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .card-info {
+            z-index: 3; /* Asegura que el texto esté siempre por encima del gradiente */
+        }
+
+        /* ----- FOOTER ESTILO APPLE ----- */
         footer {
             background-color: #111113;
             color: var(--text-gray);
@@ -397,6 +412,10 @@
             .global-nav {
                 gap: 1.2rem;
             }
+            .hero-showcase {
+                height: 450px;
+                padding: 30px;
+            }
         }
     </style>
 </head>
@@ -416,7 +435,7 @@
         <span class="local-title">VP TECNOLOGY CORPORATION</span>
         <div class="local-actions">
             <a href="#inicio">Visión General</a>
-            <a href="#especificaciones">Especificaciones Técnicas</a>
+            <a href="#especificaciones">Especificaciones</a>
             <a href="#procesador" class="btn-buy">Ver Avances</a>
         </div>
     </div>
@@ -431,21 +450,21 @@
         </div>
     </section>
 
-    <!-- Banner Showcase -->
+    <!-- Banner Showcase con fotografía de alto impacto visual -->
     <div class="hero-showcase animate-up">
         <div class="showcase-text">
             <h2>El estándar del mañana.</h2>
-            <p>Diseñado desde cero para transformar industrias, acelerar la investigación científica y redefinir los límites de la computación.</p>
+            <p>Diseñado desde cero para transformar industrias, acelerar la investigación científica y redefinir los límites de la computación visual.</p>
         </div>
     </div>
 
-    <!-- Bento Grid (Sección de Innovaciones) -->
+    <!-- Bento Grid (Sección de Innovaciones con Fotografías) -->
     <div class="grid-container" id="procesador">
         <h2 class="section-header">Poder sin precedentes.</h2>
 
         <div class="bento-grid">
             
-            <!-- X POWER ULTIMATE -->
+            <!-- X POWER ULTIMATE (Ancho completo) -->
             <div class="bento-card wide">
                 <img src="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=1600&q=80" alt="Procesador X Power Ultimate" class="card-image-bg">
                 <div class="card-info">
@@ -475,7 +494,7 @@
                 </div>
             </div>
 
-            <!-- Eficiencia Energética (Tarjeta extra estilo Apple) -->
+            <!-- Eficiencia Energética -->
             <div class="bento-card" id="especificaciones">
                 <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" alt="Eficiencia" class="card-image-bg">
                 <div class="card-info">
@@ -498,7 +517,7 @@
         </div>
     </div>
 
-    <!-- Footer Idéntico a Apple -->
+    <!-- Footer Estilo Apple -->
     <footer>
         <div class="footer-wrapper">
             <div class="footer-legal">
