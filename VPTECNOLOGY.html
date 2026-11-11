@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VP TECNOLOGY CORPORATION</title>
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --card-bg: rgba(22, 22, 23, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-blue: #2997ff;
+            --text-main: #f5f5f7;
+            --text-sub: #86868b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Barra de navegación estilo Apple */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        nav a {
+            color: var(--text-main);
+            opacity: 0.8;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            transition: opacity 0.3s ease;
+        }
+
+        nav a:hover {
+            opacity: 1;
+        }
+
+        /* Hero Principal */
+        .hero {
+            padding-top: 140px;
+            padding-bottom: 80px;
+            text-align: center;
+            max-width: 980px;
+            margin: 0 auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .hero .tagline {
+            color: #f5f5f7;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            line-height: 1.05;
+            margin-bottom: 15px;
+            background: linear-gradient(180deg, #ffffff 0%, #a1a1a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+            color: var(--text-sub);
+            font-weight: 400;
+            max-width: 680px;
+            margin: 0 auto 30px auto;
+            line-height: 1.38;
+        }
+
+        .cta-link {
+            color: var(--accent-blue);
+            font-size: 1.2rem;
+            text-decoration: none;
+            font-weight: 400;
+        }
+
+        .cta-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Banner de imagen central */
+        .hero-banner {
+            width: 100%;
+            max-width: 1100px;
+            height: 480px;
+            margin: 40px auto 80px auto;
+            border-radius: 24px;
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
+        }
+
+        /* Grilla de Avances estilo Bento Box */
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 50px;
+            letter-spacing: -0.01em;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto 100px auto;
+            padding: 0 20px;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .bento-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 420px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease;
+        }
+
+        .bento-card:hover {
+            transform: scale(1.015);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .bento-card.full-width {
+            grid-column: span 2;
+            min-height: 480px;
+        }
+
+        .card-content {
+            z-index: 2;
+            max-width: 480px;
+        }
+
+        .card-tag {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 2.2rem;
+            font-weight: 600;
+            line-height: 1.1;
+            margin-bottom: 12px;
+            color: #f5f5f7;
+        }
+
+        .card-desc {
+            color: var(--text-sub);
+            font-size: 1.05rem;
+            line-height: 1.4;
+        }
+
+        .card-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+            z-index: 1;
+            transition: opacity 0.4s ease;
+        }
+
+        .bento-card:hover .card-img {
+            opacity: 0.55;
+        }
+
+        /* Footer estilo Apple */
+        footer {
+            background: #111113;
+            border-top: 1px solid var(--border-color);
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 0.8rem;
+        }
+
+        footer p {
+            max-width: 980px;
+            margin: 0 auto 10px auto;
+            line-height: 1.5;
+        }
+
+        /* Responsivo para celulares */
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+            .bento-card.full-width {
+                grid-column: span 1;
+            }
+            nav {
+                gap: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navegación -->
+    <nav>
+        <a href="#inicio">VP TECNOLOGY</a>
+        <a href="#avances">Avances</a>
+        <a href="#innovacion">Innovación</a>
+        <a href="#contacto">Contacto</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="inicio">
+        <p class="tagline">VP TECNOLOGY CORPORATION</p>
+        <h1>Avance Pro. <br>El futuro empieza hoy.</h1>
+        <p>Diseñamos arquitectura tecnológica de última generación para transformar industrias y redefinir los límites de lo posible.</p>
+        <a href="#avances" class="cta-link">Explorar los avances &gt;</a>
+    </section>
+
+    <!-- Banner Principal -->
+    <div class="hero-banner"></div>
+
+    <!-- Sección de Avances (Bento Grid) -->
+    <div class="container" id="avances">
+        <h2 class="section-title">Innovaciones del año.</h2>
+
+        <div class="bento-grid">
+            
+            <!-- Card 1 (Ancho completo) -->
+            <div class="bento-card full-width">
+                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80" alt="IA Operativa" class="card-img">
+                <div class="card-content">
+                    <p class="card-tag">Inteligencia Artificial</p>
+                    <h3 class="card-title">Motor Neuronal VP-1</h3>
+                    <p class="card-desc">Procesamiento masivo en tiempo real con algoritmos adaptativos capaces de predecir patrones industriales complejos instantáneamente.</p>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bento-card">
+                <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80" alt="Criptografía Cuántica" class="card-img">
+                <div class="card-content">
+                    <p class="card-tag">Seguridad</p>
+                    <h3 class="card-title">Encriptación Cuántica</h3>
+                    <p class="card-desc">Redes de telecomunicaciones ultra seguras a prueba de cualquier intento de vulneración de datos.</p>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bento-card">
+                <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80" alt="Robótica Autónoma" class="card-img">
+                <div class="card-content">
+                    <p class="card-tag">Autonomía</p>
+                    <h3 class="card-title">Sistemas Autónomos</h3>
+                    <p class="card-desc">Integración perfecta de hardware y software inteligente para la gestión de robótica e infraestructura global.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>Copyright &copy; 2026 VP TECNOLOGY CORPORATION. Todos los derechos reservados.</p>
+        <p>Proyecto académico de tecnología. Diseñado con estándares de interfaz moderna.</p>
+    </footer>
+
+</body>
+</html>
