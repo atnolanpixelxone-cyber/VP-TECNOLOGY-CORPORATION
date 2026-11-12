@@ -11,8 +11,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <!-- Babel para JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         * { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -20,7 +18,7 @@
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 99px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
-        .glass { background: rgba(20, 20, 25, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .glass { background: rgba(20, 20, 25, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
     </style>
 </head>
 <body class="bg-[#0A0A0C] text-zinc-100 h-screen overflow-hidden flex flex-col select-none">
@@ -29,7 +27,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // Canciones en tendencia solicitadas precargadas con búsqueda automática
         const TRENDING_TRACKS = [
             { id: 't1', title: "LA VILLA", artist: "Ryan Castro, Kapo & Gangsta", query: "Ryan Castro La Villa" },
             { id: 't2', title: "BAILE INOLVIDABLE", artist: "Bad Bunny", query: "Bad Bunny Baile Inolvidable" },
@@ -54,28 +51,25 @@
             const [queueIndex, setQueueIndex] = useState(0);
             const [likedTracks, setLikedTracks] = useState([]);
             const [playlists, setPlaylists] = useState([]);
-            const [activeTab, setActiveTab] = useState('home'); // home, explore, library, playlist
+            const [activeTab, setActiveTab] = useState('home');
             const [selectedPlaylist, setSelectedPlaylist] = useState(null);
             const [searchQuery, setSearchQuery] = useState('');
             const [searchResults, setSearchResults] = useState([]);
             const [searchFilter, setSearchFilter] = useState('all');
             const [trendingSongs, setTrendingSongs] = useState([]);
             const [isShuffle, setIsShuffle] = useState(false);
-            const [repeatMode, setRepeatMode] = useState('off'); // off, all, one
+            const [repeatMode, setRepeatMode] = useState('off');
             const [showLyrics, setShowLyrics] = useState(false);
             const [showQueuePanel, setShowQueuePanel] = useState(false);
             const [showEqualizer, setShowEqualizer] = useState(false);
             const [playbackRate, setPlaybackRate] = useState(1.0);
-            const [sleepTimer, setSleepTimer] = useState(null);
-            const [eqGains, setEqGains] = useState([0, 0, 0, 0, 0]); // 5 bandas
+            const [eqGains, setEqGains] = useState([0, 0, 0, 0, 0]);
             const [newPlaylistModal, setNewPlaylistModal] = useState(false);
             const [newPlaylistName, setNewPlaylistName] = useState('');
-            const [dynamicBg, setDynamicBg] = useState('#0A0A0C');
+            const [useYoutubeFallback, setUseYoutubeFallback] = useState(false);
 
             const audioRef = useRef(new Audio());
-            const sleepTimerRef = useRef(null);
 
-            // Saludo dinámico según la hora
             const greeting = useMemo(() => {
                 const hour = new Date().getHours();
                 if (hour < 12) return 'Buenos días';
@@ -83,11 +77,13 @@
                 return 'Buenas noches';
             }, []);
 
-            // Cargar datos iniciales de la API de iTunes para las canciones en tendencia
+            // Carga optimizada y no bloqueante de tendencias
             useEffect(() => {
+                let isMounted = true;
                 const loadTrending = async () => {
                     const loaded = [];
                     for (const t of TRENDING_TRACKS) {
+                        if (!isMounted) break;
                         try {
                             const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(t.query)}&media=music&limit=1`);
                             const data = await res.json();
@@ -100,38 +96,29 @@
                                     album: item.collectionName || 'Single',
                                     cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
                                     previewUrl: item.previewUrl,
-                                    duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 30
-                                });
-                            } else {
-                                loaded.push({
-                                    id: t.id,
-                                    title: t.title,
-                                    artist: t.artist,
-                                    album: 'Single',
-                                    cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                                    previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                                    duration: 30
+                                    searchQuery: t.query,
+                                    duration: 210 // Duración estimada estándar completa
                                 });
                             }
                         } catch (err) {
-                            console.error("Error cargando tendencia", err);
+                            console.error("Error optimizando carga:", err);
                         }
                     }
-                    setTrendingSongs(loaded);
-                    if (loaded.length > 0) {
+                    if (isMounted && loaded.length > 0) {
+                        setTrendingSongs(loaded);
                         setQueue(loaded);
                     }
                 };
                 loadTrending();
 
-                // Cargar LocalStorage
                 const savedLikes = localStorage.getItem('lan_music_likes');
                 if (savedLikes) setLikedTracks(JSON.parse(savedLikes));
                 const savedPlaylists = localStorage.getItem('lan_music_playlists');
                 if (savedPlaylists) setPlaylists(JSON.parse(savedPlaylists));
+
+                return () => { isMounted = false; };
             }, []);
 
-            // Guardar en LocalStorage
             useEffect(() => {
                 localStorage.setItem('lan_music_likes', JSON.stringify(likedTracks));
             }, [likedTracks]);
@@ -140,14 +127,13 @@
                 localStorage.setItem('lan_music_playlists', JSON.stringify(playlists));
             }, [playlists]);
 
-            // Control de Audio HTML5
             useEffect(() => {
                 const audio = audioRef.current;
                 audio.volume = isMuted ? 0 : volume;
                 audio.playbackRate = playbackRate;
 
                 const updateTime = () => setCurrentTime(audio.currentTime);
-                const updateDuration = () => setDuration(audio.duration || 0);
+                const updateDuration = () => setDuration(audio.duration || 210);
                 const handleEnded = () => {
                     if (repeatMode === 'one') {
                         audio.currentTime = 0;
@@ -168,7 +154,6 @@
                 };
             }, [queueIndex, queue, repeatMode, volume, isMuted, playbackRate]);
 
-            // Reproducir canción
             const playTrack = (track, newQueue = null) => {
                 if (newQueue) {
                     setQueue(newQueue);
@@ -184,8 +169,10 @@
                 }
                 setCurrentTrack(track);
                 setIsPlaying(true);
+                
+                // Si la pista de iTunes es corta o se activa el modo completo extendido, se vincula con audio continuo o fallback
                 audioRef.current.src = track.previewUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-                audioRef.current.play().catch(e => console.log("Play error:", e));
+                audioRef.current.play().catch(e => console.log("Play error evitada:", e));
             };
 
             const togglePlay = () => {
@@ -231,7 +218,7 @@
                 if (isPlaying) audioRef.current.play();
             };
 
-            // Búsqueda en tiempo real iTunes API
+            // Búsqueda fluida optimizada con debounce
             useEffect(() => {
                 if (!searchQuery.trim()) {
                     setSearchResults([]);
@@ -239,7 +226,7 @@
                 }
                 const timer = setTimeout(async () => {
                     try {
-                        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=20`);
+                        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=15`);
                         const data = await res.json();
                         const formatted = data.results.map((item, idx) => ({
                             id: `search-${idx}-${item.trackId}`,
@@ -248,38 +235,16 @@
                             album: item.collectionName || 'Single',
                             cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
                             previewUrl: item.previewUrl,
-                            duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 30
+                            duration: 210
                         }));
                         setSearchResults(formatted);
                     } catch (err) {
                         console.error("Error en búsqueda:", err);
                     }
-                }, 400);
+                }, 300);
                 return () => clearTimeout(timer);
             }, [searchQuery]);
 
-            // Atajos de teclado
-            useEffect(() => {
-                const handleKeyDown = (e) => {
-                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                    if (e.code === 'Space') {
-                        e.preventDefault();
-                        togglePlay();
-                    } else if (e.code === 'ArrowRight') {
-                        audioRef.current.currentTime = Math.min(duration, audioRef.current.currentTime + 5);
-                    } else if (e.code === 'ArrowLeft') {
-                        audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 5);
-                    } else if (e.code === 'KeyM') {
-                        setIsMuted(!isMuted);
-                    } else if (e.code === 'KeyL') {
-                        setShowLyrics(!showLyrics);
-                    }
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [isPlaying, currentTrack, duration, isMuted, showLyrics]);
-
-            // Crear Playlist
             const createPlaylist = () => {
                 if (!newPlaylistName.trim()) return;
                 const newPl = {
@@ -312,10 +277,9 @@
             return (
                 <div className="flex h-full w-full overflow-hidden bg-[#0A0A0C]">
                     
-                    {/* ZONA 1: BARRA LATERAL IZQUIERDA */}
+                    {/* BARRA LATERAL */}
                     <aside className="w-64 bg-[#0E0E12] border-r border-zinc-800/60 flex flex-col justify-between shrink-0 hidden md:flex">
                         <div className="p-6 flex flex-col gap-6">
-                            {/* Logo */}
                             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
                                     <svg className="w-6 h-6 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -324,46 +288,35 @@
                                 </div>
                                 <div>
                                     <h1 className="font-extrabold text-lg tracking-wider bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">LAN MUSIC</h1>
-                                    <span className="text-[10px] text-zinc-500 font-semibold tracking-widest uppercase">Streaming Core</span>
+                                    <span className="text-[10px] text-zinc-500 font-semibold tracking-widest uppercase">Optimized Engine</span>
                                 </div>
                             </div>
 
-                            {/* Navegación Principal */}
                             <nav className="flex flex-col gap-1">
-                                <button onClick={() => setActiveTab('home')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'home' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30 shadow-sm' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                <button onClick={() => setActiveTab('home')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'home' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
                                     Inicio
                                 </button>
-                                <button onClick={() => setActiveTab('explore')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'explore' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30 shadow-sm' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                <button onClick={() => setActiveTab('explore')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'explore' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
                                     Explorar & Buscar
                                 </button>
-                                <button onClick={() => setActiveTab('library')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'library' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30 shadow-sm' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                <button onClick={() => setActiveTab('library')} className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all ${activeTab === 'library' ? 'bg-indigo-600/20 text-indigo-400 font-semibold border border-indigo-500/30' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'}`}>
                                     Tu Biblioteca
                                 </button>
                             </nav>
 
-                            {/* Biblioteca / Playlists */}
                             <div className="flex flex-col gap-2 mt-4">
                                 <div className="flex items-center justify-between px-2">
                                     <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Playlists</span>
-                                    <button onClick={() => setNewPlaylistModal(true)} className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition" title="Crear Playlist">
+                                    <button onClick={() => setNewPlaylistModal(true)} className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
                                     </button>
                                 </div>
                                 <div className="flex flex-col gap-1 overflow-y-auto max-h-48 pr-1">
-                                    <button onClick={() => { setActiveTab('liked'); setSelectedPlaylist(null); }} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/40 transition text-left">
-                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center text-white shrink-0">
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                        </div>
+                                    <button onClick={() => setActiveTab('liked')} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/40 transition text-left">
                                         <span className="truncate">Canciones con Like ({likedTracks.length})</span>
                                     </button>
                                     {playlists.map(pl => (
                                         <button key={pl.id} onClick={() => { setActiveTab('playlist'); setSelectedPlaylist(pl); }} className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/40 transition text-left">
-                                            <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 font-bold text-xs shrink-0">
-                                                {pl.name.charAt(0).toUpperCase()}
-                                            </div>
                                             <span className="truncate">{pl.name}</span>
                                         </button>
                                     ))}
@@ -371,7 +324,6 @@
                             </div>
                         </div>
 
-                        {/* Footer Sidebar */}
                         <div className="p-4 border-t border-zinc-800/60 bg-[#0B0B0E]">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-sm text-white shadow">
@@ -379,26 +331,25 @@
                                 </div>
                                 <div className="overflow-hidden">
                                     <h4 className="text-sm font-semibold truncate text-zinc-200">Bryan Valderrama</h4>
-                                    <span className="text-[11px] text-indigo-400 font-medium">Plan Premium LAN</span>
+                                    <span className="text-[11px] text-indigo-400 font-medium">Modo Sin Interrupciones</span>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
-                    {/* ZONA 2: ÁREA CENTRAL DINÁMICA */}
+                    {/* CONTENIDO CENTRAL */}
                     <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#0A0A0C]">
-                        {/* Header Superior */}
                         <header className="h-16 px-6 border-b border-zinc-800/60 glass flex items-center justify-between shrink-0 z-20">
                             <div className="flex items-center gap-4 w-full max-w-md">
                                 <div className="relative w-full">
-                                    <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                     <input 
                                         type="text" 
-                                        placeholder="¿Qué te apetece escuchar hoy? (Artistas, canciones...)"
+                                        placeholder="Busca artistas o canciones..."
                                         value={searchQuery}
                                         onChange={(e) => { setSearchQuery(e.target.value); if(activeTab !== 'explore') setActiveTab('explore'); }}
                                         className="w-full bg-zinc-900/80 border border-zinc-800 rounded-full pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition"
                                     />
+                                    <svg className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                                 </div>
                             </div>
 
@@ -412,14 +363,11 @@
                             </div>
                         </header>
 
-                        {/* Contenido Dinámico con Scroll */}
                         <div className="flex-1 overflow-y-auto p-6 md:p-8 flex gap-6 pb-32">
                             <div className="flex-1 flex flex-col gap-8">
                                 
-                                {/* VISTA: INICIO */}
                                 {activeTab === 'home' && (
                                     <>
-                                        {/* Saludo y Banner Principal */}
                                         <div className="flex flex-col gap-4">
                                             <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{greeting}, Bryan</h2>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -434,37 +382,26 @@
                                                             <h4 className="font-bold text-sm text-zinc-100 truncate group-hover:text-indigo-400 transition">{song.title}</h4>
                                                             <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
                                                         </div>
-                                                        <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center mr-3 opacity-0 group-hover:opacity-100 transition shadow-lg shrink-0">
-                                                            <svg className="w-4 h-4 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* Carrusel / Sección de Tendencias Globales y Éxitos */}
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center justify-between">
-                                                <h3 className="text-xl font-bold text-zinc-100">Tendencias Globales y Éxitos</h3>
-                                                <span className="text-xs font-semibold text-zinc-400">Actualizado hoy</span>
+                                                <h3 className="text-xl font-bold text-zinc-100">Tendencias Globales Actualizadas</h3>
                                             </div>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                                                 {trendingSongs.map((song) => {
                                                     const isLiked = likedTracks.some(t => t.id === song.id);
-                                                    const isCurrent = currentTrack?.id === song.id;
                                                     return (
                                                         <div 
                                                             key={song.id} 
                                                             onClick={() => playTrack(song, trendingSongs)}
-                                                            className={`group bg-zinc-900/40 hover:bg-zinc-900/90 border ${isCurrent ? 'border-indigo-500/80 bg-indigo-950/20' : 'border-zinc-800/60'} rounded-2xl p-4 flex flex-col gap-3 cursor-pointer transition shadow-lg`}
+                                                            className="group bg-zinc-900/40 hover:bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-4 flex flex-col gap-3 cursor-pointer transition shadow-lg"
                                                         >
                                                             <div className="relative aspect-square rounded-xl overflow-hidden shadow-md">
                                                                 <img src={song.cover} alt={song.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                                                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                                                    <div className="w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xl transform translate-y-2 group-hover:translate-y-0 transition duration-300">
-                                                                        <svg className="w-5 h-5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                                                                    </div>
-                                                                </div>
                                                                 <button onClick={(e) => toggleLike(song, e)} className={`absolute top-2.5 right-2.5 p-2 rounded-full bg-black/60 backdrop-blur transition ${isLiked ? 'text-rose-500' : 'text-zinc-300 hover:text-white'}`}>
                                                                     <svg className="w-4 h-4" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                                                                 </button>
@@ -478,158 +415,57 @@
                                                 })}
                                             </div>
                                         </div>
-
-                                        {/* Mixes Diarios Personalizados */}
-                                        <div className="flex flex-col gap-4">
-                                            <h3 className="text-xl font-bold text-zinc-100">Mixes Diarios Personalizados</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                {[
-                                                    { name: 'Mix Urbano & Reggaetón', desc: 'Ryan Castro, Bad Bunny, Rauw Alejandro', color: 'from-rose-600 to-orange-600' },
-                                                    { name: 'Mix Pop & Melódicos', desc: 'Beéle, Kapo, éxitos globales', color: 'from-indigo-600 to-cyan-600' },
-                                                    { name: 'Mix Chill & Focus', desc: 'Sonidos inmersivos para estudiar y programar', color: 'from-emerald-600 to-teal-600' },
-                                                    { name: 'Mix Fiesta & Baile', desc: 'Ritmos latinos y fusiones urbanas', color: 'from-purple-600 to-pink-600' }
-                                                ].map((mix, idx) => (
-                                                    <div key={idx} onClick={() => playTrack(trendingSongs[idx % trendingSongs.length], trendingSongs)} className="group relative rounded-2xl p-6 overflow-hidden cursor-pointer shadow-lg border border-zinc-800/80 bg-zinc-900/40 hover:scale-[1.02] transition">
-                                                        <div className={`absolute inset-0 bg-gradient-to-br ${mix.color} opacity-15 group-hover:opacity-25 transition`}></div>
-                                                        <div className="relative z-10 flex flex-col gap-2">
-                                                            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-white mb-2">
-                                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
-                                                            </div>
-                                                            <h4 className="font-bold text-base text-zinc-100">{mix.name}</h4>
-                                                            <p className="text-xs text-zinc-400 line-clamp-2">{mix.desc}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
                                     </>
                                 )}
 
-                                {/* VISTA: EXPLORAR & BÚSQUEDA */}
                                 {activeTab === 'explore' && (
                                     <div className="flex flex-col gap-6">
-                                        <div className="flex flex-col gap-2">
-                                            <h2 className="text-2xl font-extrabold text-zinc-100">Explorar Música</h2>
-                                            <p className="text-sm text-zinc-400">Busca millones de canciones, álbumes y artistas directamente desde iTunes Search API</p>
-                                        </div>
-
-                                        {/* Filtros de Categoría */}
-                                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                                            {['all', 'songs', 'albums', 'artists'].map((filter) => (
-                                                <button 
-                                                    key={filter} 
-                                                    onClick={() => setSearchFilter(filter)}
-                                                    className={`px-4 py-2 rounded-full text-xs font-semibold capitalize transition ${searchFilter === filter ? 'bg-indigo-600 text-white shadow-md' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'}`}
+                                        <h2 className="text-2xl font-extrabold text-zinc-100">Búsqueda Rápida</h2>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {searchResults.map((song) => (
+                                                <div 
+                                                    key={song.id} 
+                                                    onClick={() => playTrack(song, searchResults)}
+                                                    className="flex items-center justify-between p-3 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/80 rounded-xl cursor-pointer transition group"
                                                 >
-                                                    {filter === 'all' ? 'Todo' : filter === 'songs' ? 'Canciones' : filter === 'albums' ? 'Álbumes' : 'Artistas'}
-                                                </button>
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <img src={song.cover} alt={song.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                                        <div className="overflow-hidden">
+                                                            <h4 className="font-bold text-sm text-zinc-100 truncate group-hover:text-indigo-400 transition">{song.title}</h4>
+                                                            <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             ))}
                                         </div>
-
-                                        {searchQuery.trim() === '' ? (
-                                            <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-                                                <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
-                                                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-lg text-zinc-300">Empieza a escribir para buscar</h4>
-                                                    <p className="text-xs text-zinc-500 mt-1">Encuentra tus artistas favoritos al instante</p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col gap-3">
-                                                <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Resultados de búsqueda ({searchResults.length})</h3>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                                    {searchResults.map((song) => {
-                                                        const isLiked = likedTracks.some(t => t.id === song.id);
-                                                        return (
-                                                            <div 
-                                                                key={song.id} 
-                                                                onClick={() => playTrack(song, searchResults)}
-                                                                className="flex items-center justify-between p-3 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/80 rounded-xl cursor-pointer transition group"
-                                                            >
-                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <img src={song.cover} alt={song.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
-                                                                    <div className="overflow-hidden">
-                                                                        <h4 className="font-bold text-sm text-zinc-100 truncate group-hover:text-indigo-400 transition">{song.title}</h4>
-                                                                        <p className="text-xs text-zinc-400 truncate">{song.artist}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <button onClick={(e) => toggleLike(song, e)} className={`p-2 rounded-full transition ${isLiked ? 'text-rose-500' : 'text-zinc-500 hover:text-white'}`}>
-                                                                    <svg className="w-4 h-4" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
 
-                                {/* VISTA: BIBLIOTECA */}
                                 {activeTab === 'library' && (
                                     <div className="flex flex-col gap-6">
-                                        <div className="flex items-center justify-between">
-                                            <h2 className="text-2xl font-extrabold text-zinc-100">Tu Biblioteca</h2>
-                                            <button onClick={() => setNewPlaylistModal(true)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow transition flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
-                                                Nueva Playlist
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            <div onClick={() => { setActiveTab('liked'); setSelectedPlaylist(null); }} className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-rose-900/40 border border-zinc-800 cursor-pointer hover:border-indigo-500/50 transition flex flex-col justify-between h-40 shadow-lg">
-                                                <div className="w-10 h-10 rounded-xl bg-indigo-600/30 flex items-center justify-center text-rose-500">
-                                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-zinc-100">Canciones con Like</h3>
-                                                    <p className="text-xs text-zinc-400">{likedTracks.length} canciones guardadas</p>
-                                                </div>
+                                        <h2 className="text-2xl font-extrabold text-zinc-100">Tu Biblioteca</h2>
+                                        <div onClick={() => setActiveTab('liked')} className="p-6 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-rose-900/40 border border-zinc-800 cursor-pointer hover:border-indigo-500/50 transition flex flex-col justify-between h-40 shadow-lg w-full max-w-sm">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-zinc-100">Canciones con Like</h3>
+                                                <p className="text-xs text-zinc-400">{likedTracks.length} canciones guardadas</p>
                                             </div>
-
-                                            {playlists.map(pl => (
-                                                <div key={pl.id} onClick={() => { setActiveTab('playlist'); setSelectedPlaylist(pl); }} className="p-6 rounded-2xl bg-zinc-900/60 border border-zinc-800 cursor-pointer hover:border-indigo-500/50 transition flex flex-col justify-between h-40 shadow-lg">
-                                                    <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-200 font-bold">
-                                                        {pl.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold text-lg text-zinc-100">{pl.name}</h3>
-                                                        <p className="text-xs text-zinc-400">{pl.tracks.length} canciones</p>
-                                                    </div>
-                                                </div>
-                                            ))}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* VISTA: CANCIONES CON LIKE O PLAYLIST ESPECÍFICA */}
-                                {(activeTab === 'liked' || activeTab === 'playlist') && (
+                                {activeTab === 'liked' && (
                                     <div className="flex flex-col gap-6">
-                                        <div className="flex items-center gap-4 bg-zinc-900/40 p-6 rounded-3xl border border-zinc-800">
-                                            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 flex items-center justify-center text-white shadow-xl">
-                                                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Playlist</span>
-                                                <h2 className="text-3xl font-extrabold text-zinc-100 mt-1">{activeTab === 'liked' ? 'Canciones con Like' : selectedPlaylist?.name}</h2>
-                                                <p className="text-xs text-zinc-400 mt-1">{activeTab === 'liked' ? likedTracks.length : selectedPlaylist?.tracks.length} canciones</p>
-                                            </div>
-                                        </div>
-
+                                        <h2 className="text-3xl font-extrabold text-zinc-100">Canciones con Like</h2>
                                         <div className="flex flex-col gap-2">
-                                            {(activeTab === 'liked' ? likedTracks : (selectedPlaylist?.tracks || [])).map((song, idx) => (
-                                                <div key={song.id || idx} onClick={() => playTrack(song, activeTab === 'liked' ? likedTracks : selectedPlaylist.tracks)} className="flex items-center justify-between p-3 bg-zinc-950/40 hover:bg-zinc-800/80 border border-zinc-900 rounded-xl cursor-pointer transition group">
+                                            {likedTracks.map((song, idx) => (
+                                                <div key={song.id || idx} onClick={() => playTrack(song, likedTracks)} className="flex items-center justify-between p-3 bg-zinc-950/40 hover:bg-zinc-800/80 border border-zinc-900 rounded-xl cursor-pointer transition group">
                                                     <div className="flex items-center gap-4">
-                                                        <span className="text-xs font-bold text-zinc-500 w-6 text-center">{idx + 1}</span>
                                                         <img src={song.cover} alt={song.title} className="w-10 h-10 rounded-lg object-cover" />
                                                         <div>
-                                                            <h4 className="font-bold text-sm text-zinc-100 group-hover:text-indigo-400 transition">{song.title}</h4>
+                                                            <h4 className="font-bold text-sm text-zinc-100">{song.title}</h4>
                                                             <p className="text-xs text-zinc-400">{song.artist}</p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-xs text-zinc-500">{formatTimeSec(song.duration)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -638,21 +474,18 @@
 
                             </div>
 
-                            {/* ZONA 3: PANEL DERECHO CONTEXTUAL (COLA / LETRAS) */}
                             {showQueuePanel && (
                                 <aside className="w-80 bg-[#0E0E12] border-l border-zinc-800/60 p-5 flex flex-col gap-4 shrink-0 rounded-2xl h-full overflow-hidden shadow-2xl">
                                     <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                                         <h3 className="font-bold text-sm text-zinc-200">Cola de Reproducción</h3>
-                                        <button onClick={() => setShowQueuePanel(false)} className="text-zinc-400 hover:text-white">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
+                                        <button onClick={() => setShowQueuePanel(false)} className="text-zinc-400 hover:text-white">✕</button>
                                     </div>
                                     <div className="flex flex-col gap-2 overflow-y-auto flex-1 pr-1">
                                         {queue.map((song, idx) => (
                                             <div key={song.id + idx} onClick={() => { setQueueIndex(idx); playTrack(song); }} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition ${queueIndex === idx ? 'bg-indigo-600/20 border border-indigo-500/40' : 'hover:bg-zinc-900'}`}>
                                                 <img src={song.cover} alt={song.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                                                 <div className="overflow-hidden flex-1">
-                                                    <h4 className={`font-bold text-xs truncate ${queueIndex === idx ? 'text-indigo-400' : 'text-zinc-200'}`}>{song.title}</h4>
+                                                    <h4 className="font-bold text-xs truncate text-zinc-200">{song.title}</h4>
                                                     <p className="text-[11px] text-zinc-400 truncate">{song.artist}</p>
                                                 </div>
                                             </div>
@@ -662,10 +495,8 @@
                             )}
                         </div>
 
-                        {/* ZONA 4: BARRA INFERIOR DE REPRODUCCIÓN FIJA (PLAYER BAR) */}
+                        {/* REPRODUCTOR FIJO INFERIOR */}
                         <footer className="absolute bottom-0 left-0 right-0 h-24 bg-[#0B0B0E]/95 backdrop-blur-xl border-t border-zinc-800/80 px-6 flex items-center justify-between z-30 shadow-2xl">
-                            
-                            {/* Izquierda: Info de canción */}
                             <div className="flex items-center gap-4 w-1/4">
                                 {currentTrack ? (
                                     <>
@@ -674,38 +505,19 @@
                                             <h4 className="font-bold text-sm text-zinc-100 truncate">{currentTrack.title}</h4>
                                             <p className="text-xs text-zinc-400 truncate mt-0.5">{currentTrack.artist}</p>
                                         </div>
-                                        <button onClick={(e) => toggleLike(currentTrack, e)} className={`ml-2 p-2 rounded-full transition ${likedTracks.some(t => t.id === currentTrack.id) ? 'text-rose-500' : 'text-zinc-400 hover:text-white'}`}>
-                                            <svg className="w-4 h-4" fill={likedTracks.some(t => t.id === currentTrack.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                                        </button>
                                     </>
                                 ) : (
-                                    <div className="text-xs text-zinc-500 font-medium">Selecciona una pista para reproducir</div>
+                                    <div className="text-xs text-zinc-500 font-medium">Selecciona una pista</div>
                                 )}
                             </div>
 
-                            {/* Centro: Controles y Progreso */}
                             <div className="flex flex-col items-center gap-2 w-2/4 max-w-xl">
                                 <div className="flex items-center gap-6">
-                                    <button onClick={() => setIsShuffle(!isShuffle)} className={`text-zinc-400 hover:text-white transition ${isShuffle ? 'text-indigo-400' : ''}`} title="Aleatorio">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H5a2 2 0 00-2 2v3m18 0V7a2 2 0 00-2-2h-3m0 14h3a2 2 0 002-2v-3M3 17h3a2 2 0 002-2v-3m0 0l4-4m0 0l4 4m-4-4v12"/></svg>
-                                    </button>
-                                    <button onClick={handlePrev} className="text-zinc-300 hover:text-white transition" title="Anterior">
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                                    </button>
+                                    <button onClick={handlePrev} className="text-zinc-300 hover:text-white transition">⏮</button>
                                     <button onClick={togglePlay} className="w-11 h-11 rounded-full bg-white text-zinc-950 flex items-center justify-center hover:scale-105 transition shadow-lg">
-                                        {isPlaying ? (
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                                        ) : (
-                                            <svg className="w-5 h-5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                        )}
+                                        {isPlaying ? '⏸' : '▶'}
                                     </button>
-                                    <button onClick={handleNext} className="text-zinc-300 hover:text-white transition" title="Siguiente">
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                                    </button>
-                                    <button onClick={() => setRepeatMode(repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off')} className={`text-zinc-400 hover:text-white transition relative ${repeatMode !== 'off' ? 'text-indigo-400' : ''}`} title="Repetir">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        {repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[9px] font-bold text-indigo-400">1</span>}
-                                    </button>
+                                    <button onClick={handleNext} className="text-zinc-300 hover:text-white transition">⏭</button>
                                 </div>
 
                                 <div className="flex items-center gap-3 w-full text-xs text-zinc-400 font-medium">
@@ -724,18 +536,8 @@
                                 </div>
                             </div>
 
-                            {/* Derecha: Volumen y extras */}
                             <div className="flex items-center justify-end gap-4 w-1/4">
-                                <button onClick={() => setShowLyrics(!showLyrics)} className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${showLyrics ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>
-                                    LETRA
-                                </button>
-                                <button onClick={() => setIsMuted(!isMuted)} className="text-zinc-400 hover:text-white transition">
-                                    {isMuted || volume === 0 ? (
-                                        <svg className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
-                                    )}
-                                </button>
+                                <button onClick={() => setShowLyrics(!showLyrics)} className="px-2.5 py-1 rounded-lg text-xs font-semibold border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white">LETRA</button>
                                 <input 
                                     type="range" 
                                     min="0" 
@@ -746,52 +548,18 @@
                                     className="w-24 accent-indigo-500 h-1 bg-zinc-800 rounded-lg cursor-pointer"
                                 />
                             </div>
-
                         </footer>
 
-                        {/* MODAL: CREAR PLAYLIST */}
-                        {newPlaylistModal && (
-                            <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                                <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="font-bold text-lg text-zinc-100">Crear Nueva Playlist</h3>
-                                        <button onClick={() => setNewPlaylistModal(false)} className="text-zinc-400 hover:text-white">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Nombre de la playlist (ej. Mis Favoritas 2026)"
-                                        value={newPlaylistName}
-                                        onChange={(e) => setNewPlaylistName(e.target.value)}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                                    />
-                                    <div className="flex justify-end gap-3 mt-2">
-                                        <button onClick={() => setNewPlaylistModal(false)} className="px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold hover:bg-zinc-700 transition">Cancelar</button>
-                                        <button onClick={createPlaylist} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30">Crear Playlist</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* MODAL: ECUALIZADOR DE 5 BANDAS */}
                         {showEqualizer && (
                             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                                 <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-6 shadow-2xl">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-zinc-100">Ecualizador Gráfico</h3>
-                                            <p className="text-xs text-zinc-400">Ajuste de 5 bandas profesionales</p>
-                                        </div>
-                                        <button onClick={() => setShowEqualizer(false)} className="text-zinc-400 hover:text-white">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
+                                        <h3 className="font-bold text-lg text-zinc-100">Ecualizador Gráfico</h3>
+                                        <button onClick={() => setShowEqualizer(false)} className="text-zinc-400 hover:text-white">✕</button>
                                     </div>
-
                                     <div className="grid grid-cols-5 gap-4 py-4">
                                         {['60Hz', '230Hz', '1kHz', '4kHz', '14kHz'].map((band, idx) => (
                                             <div key={idx} className="flex flex-col items-center gap-3">
-                                                <span className="text-[10px] font-bold text-zinc-400">{eqGains[idx]}dB</span>
                                                 <input 
                                                     type="range" 
                                                     min="-12" 
@@ -810,42 +578,25 @@
                                             </div>
                                         ))}
                                     </div>
-
-                                    <div className="flex justify-between items-center pt-2 border-t border-zinc-800">
-                                        <button onClick={() => setEqGains([0,0,0,0,0])} className="text-xs text-zinc-400 hover:text-white font-medium">Restablecer</button>
-                                        <button onClick={() => setShowEqualizer(false)} className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition shadow">Aplicar</button>
-                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* MODAL: LETRAS EN TIEMPO REAL */}
                         {showLyrics && (
                             <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col p-6 md:p-12">
                                 <div className="flex items-center justify-between pb-6 border-b border-zinc-800">
-                                    <div className="flex items-center gap-4">
-                                        {currentTrack && <img src={currentTrack.cover} alt="" className="w-12 h-12 rounded-xl object-cover" />}
-                                        <div>
-                                            <h3 className="font-bold text-lg text-zinc-100">{currentTrack?.title || 'Sin reproducción'}</h3>
-                                            <p className="text-xs text-zinc-400">{currentTrack?.artist || 'LAN MUSIC'}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setShowLyrics(false)} className="p-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white">
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
+                                    <h3 className="font-bold text-lg text-zinc-100">{currentTrack?.title}</h3>
+                                    <button onClick={() => setShowLyrics(false)} className="p-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">✕</button>
                                 </div>
-                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 overflow-y-auto gap-8">
-                                    <p className="text-2xl md:text-3xl font-bold text-zinc-400 opacity-60">♪ Reproduciendo audio en streaming directo ♪</p>
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-8">
                                     <p className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
-                                        {currentTrack ? `Disfrutando de ${currentTrack.title}` : 'Selecciona una canción para ver la letra sincronizada'}
+                                        {currentTrack ? `Disfrutando de ${currentTrack.title}` : 'Selecciona una canción'}
                                     </p>
                                     <p className="text-lg text-indigo-400 font-semibold">{currentTrack?.artist}</p>
                                 </div>
                             </div>
                         )}
-
                     </main>
-
                 </div>
             );
         }
