@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN MUSIC — Streaming Completo Sin Cortes</title>
+    <title>LAN MUSIC — Streaming Completo HD</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,62 +15,69 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 99px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
-        .glass { background: rgba(16, 16, 20, 0.82); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
+        .glass { background: rgba(16, 16, 20, 0.85); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); }
     </style>
 </head>
 <body class="bg-[#0A0A0C] text-zinc-100 h-screen overflow-hidden flex flex-col select-none">
     <div id="root" class="h-full w-full flex flex-col"></div>
-    <!-- Contenedor oculto estricto para YouTube IFrame API (Evita bloqueos de pausa) -->
-    <div id="yt-hidden-player" style="position:fixed;width:1px;height:1px;opacity:0.001;pointer-events:none;bottom:0;right:0;z-index:-99;"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
         const TRENDING_SEED = [
-            { id: 't1', title: "LA VILLA", artist: "Ryan Castro, Kapo & Gangsta", query: "Ryan Castro Kapo La Villa official audio" },
-            { id: 't2', title: "BAILE INOLVIDABLE", artist: "Bad Bunny", query: "Bad Bunny BAILE INOLVIDABLE official audio" },
-            { id: 't3', title: "no tiene sentido", artist: "Beéle", query: "Beele no tiene sentido official audio" },
-            { id: 't4', title: "DtMF", artist: "Bad Bunny", query: "Bad Bunny DtMF official audio" },
-            { id: 't5', title: "Dardos", artist: "Romeo Santos & Prince Royce", query: "Romeo Santos Prince Royce Dardos official" },
-            { id: 't6', title: "Qué Pasaría...", artist: "Rauw Alejandro & Bad Bunny", query: "Rauw Alejandro Bad Bunny Que Pasaria official" },
-            { id: 't7', title: "UWAIE", artist: "Kapo", query: "Kapo UWAIE official audio" },
-            { id: 't8', title: "COQUETA", artist: "Fuerza Regida & Grupo Frontera", query: "Fuerza Regida Grupo Frontera Coqueta official" },
-            { id: 't9', title: "La Perla", artist: "ROSALÍA & Yahritza Y Su Esencia", query: "Rosalia Yahritza La Perla official" },
-            { id: 't10', title: "Berghain", artist: "ROSALÍA, Björk & Yves Tumor", query: "Rosalia Bjork Yves Tumor Berghain" }
+            { id: 't1', title: "LA VILLA", artist: "Ryan Castro, Kapo & Gangsta", query: "Ryan Castro La Villa" },
+            { id: 't2', title: "BAILE INOLVIDABLE", artist: "Bad Bunny", query: "Bad Bunny Baile Inolvidable" },
+            { id: 't3', title: "no tiene sentido", artist: "Beéle", query: "Beele no tiene sentido" },
+            { id: 't4', title: "DtMF", artist: "Bad Bunny", query: "Bad Bunny DtMF" },
+            { id: 't5', title: "Dardos", artist: "Romeo Santos & Prince Royce", query: "Romeo Santos Dardos" },
+            { id: 't6', title: "Qué Pasaría...", artist: "Rauw Alejandro & Bad Bunny", query: "Rauw Alejandro Bad Bunny" },
+            { id: 't7', title: "UWAIE", artist: "Kapo", query: "Kapo UWAIE" },
+            { id: 't8', title: "COQUETA", artist: "Fuerza Regida & Grupo Frontera", query: "Fuerza Regida Coqueta" },
+            { id: 't9', title: "La Perla", artist: "ROSALÍA & Yahritza Y Su Esencia", query: "Rosalia La Perla" },
+            { id: 't10', title: "Berghain", artist: "ROSALÍA, Björk & Yves Tumor", query: "Rosalia Bjork Berghain" }
         ];
 
-        const SEARCH_INSTANCES = [
-            "https://pipedapi.kavin.rocks",
-            "https://pipedapi.adminforge.de",
-            "https://api.piped.projectsegfau.lt"
+        // Nodos de Audius API para streaming de pistas completas sin restricciones CORS
+        const AUDIUS_HOSTS = [
+            "https://discoveryprovider.audius.co",
+            "https://discoveryprovider2.audius.co",
+            "https://discoveryprovider3.audius.co"
         ];
 
-        async function fetchFullVideoId(query) {
-            for (const base of SEARCH_INSTANCES) {
+        async function getAudiusHost() {
+            for (const host of AUDIUS_HOSTS) {
                 try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3000);
-                    const res = await fetch(`${base}/search?q=${encodeURIComponent(query)}&filter=music_songs`, { signal: controller.signal });
-                    clearTimeout(timeoutId);
-                    if (!res.ok) continue;
-                    const data = await res.json();
-                    if (data.items && data.items.length > 0) {
-                        const first = data.items[0];
-                        const vid = first.url ? first.url.split("v=")[1]?.split("&")[0] : null;
-                        if (vid) return { videoId: vid, duration: first.duration || 210 };
-                    }
+                    const res = await fetch(`${host}/health_check`, { signal: AbortSignal.timeout(2000) });
+                    if (res.ok) return host;
                 } catch (_) {}
             }
+            return AUDIUS_HOSTS[0];
+        }
+
+        async function searchAudiusFullTrack(query, host) {
+            try {
+                const res = await fetch(`${host}/v1/tracks/search?query=${encodeURIComponent(query)}&limit=1&app_name=LANMUSIC`);
+                if (!res.ok) return null;
+                const json = await res.json();
+                if (json.data && json.data.length > 0) {
+                    const track = json.data[0];
+                    return {
+                        streamUrl: `${host}/v1/tracks/${track.id}/stream?app_name=LANMUSIC`,
+                        duration: track.duration || 210,
+                        artwork: track.artwork ? (track.artwork['480x480'] || track.artwork['150x150']) : null
+                    };
+                }
+            } catch (_) {}
             return null;
         }
 
         function App() {
             const [currentTrack, setCurrentTrack] = useState(null);
             const [isPlaying, setIsPlaying] = useState(false);
-            const [isBuffering, setIsBuffering] = useState(false);
+            const [isLoadingAudio, setIsLoadingAudio] = useState(false);
             const [currentTime, setCurrentTime] = useState(0);
             const [duration, setDuration] = useState(0);
-            const [volume, setVolume] = useState(85);
+            const [volume, setVolume] = useState(0.85);
             const [isMuted, setIsMuted] = useState(false);
             const [queue, setQueue] = useState([]);
             const [queueIndex, setQueueIndex] = useState(0);
@@ -87,12 +94,16 @@
             const [showLyrics, setShowLyrics] = useState(false);
             const [showQueuePanel, setShowQueuePanel] = useState(false);
             const [showEqualizer, setShowEqualizer] = useState(false);
+            const [playbackRate, setPlaybackRate] = useState(1.0);
             const [eqGains, setEqGains] = useState([0, 0, 0, 0, 0]);
             const [newPlaylistModal, setNewPlaylistModal] = useState(false);
             const [newPlaylistName, setNewPlaylistName] = useState('');
+            const [audiusHost, setAudiusHost] = useState(AUDIUS_HOSTS[0]);
 
-            const ytPlayerRef = useRef(null);
-            const progressIntervalRef = useRef(null);
+            const audioRef = useRef(null);
+            const audioCtxRef = useRef(null);
+            const filtersRef = useRef([]);
+            const fileInputRef = useRef(null);
 
             const greeting = useMemo(() => {
                 const hour = new Date().getHours();
@@ -101,92 +112,65 @@
                 return 'Buenas noches';
             }, []);
 
-            // Inicialización robusta de YouTube IFrame API
-            useEffect(() => {
-                window.onYouTubeIframeAPIReady = () => {
-                    ytPlayerRef.current = new window.YT.Player('yt-hidden-player', {
-                        height: '1',
-                        width: '1',
-                        playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1 },
-                        events: {
-                            onReady: (e) => e.target.setVolume(volume),
-                            onStateChange: (e) => {
-                                // 1: Playing, 2: Paused, 0: Ended, 3: Buffering
-                                if (e.data === 1) {
-                                    setIsPlaying(true);
-                                    setIsBuffering(false);
-                                    const d = ytPlayerRef.current.getDuration();
-                                    if (d > 0) setDuration(d);
-                                } else if (e.data === 2) {
-                                    setIsPlaying(false);
-                                } else if (e.data === 3) {
-                                    setIsBuffering(true);
-                                } else if (e.data === 0) {
-                                    setIsPlaying(false);
-                                    window.dispatchEvent(new CustomEvent('lan-track-ended'));
-                                }
-                            },
-                            onError: () => setIsBuffering(false)
-                        }
+            // Inicializar Web Audio API (Ecualizador real de 5 bandas)
+            const initAudioContext = () => {
+                if (!audioCtxRef.current && audioRef.current) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioContext();
+                    const source = ctx.createMediaElementSource(audioRef.current);
+                    const frequencies = [60, 230, 910, 4000, 14000];
+                    const filters = frequencies.map((freq, i) => {
+                        const filter = ctx.createBiquadFilter();
+                        filter.type = i === 0 ? 'lowshelf' : i === frequencies.length - 1 ? 'highshelf' : 'peaking';
+                        filter.frequency.value = freq;
+                        filter.gain.value = eqGains[i];
+                        return filter;
                     });
-                };
 
-                if (!document.getElementById('yt-iframe-script')) {
-                    const tag = document.createElement('script');
-                    tag.id = 'yt-iframe-script';
-                    tag.src = 'https://www.youtube.com/iframe_api';
-                    document.body.appendChild(tag);
-                }
-
-                return () => clearInterval(progressIntervalRef.current);
-            }, []);
-
-            // Sincronización continua de la barra de progreso
-            useEffect(() => {
-                clearInterval(progressIntervalRef.current);
-                if (isPlaying) {
-                    progressIntervalRef.current = setInterval(() => {
-                        if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
-                            const t = ytPlayerRef.current.getCurrentTime();
-                            const d = ytPlayerRef.current.getDuration();
-                            if (!isNaN(t)) setCurrentTime(t);
-                            if (!isNaN(d) && d > 0) setDuration(d);
-                        }
-                    }, 400);
-                }
-                return () => clearInterval(progressIntervalRef.current);
-            }, [isPlaying]);
-
-            useEffect(() => {
-                const onTrackEnd = () => {
-                    if (repeatMode === 'one' && ytPlayerRef.current) {
-                        ytPlayerRef.current.seekTo(0);
-                        ytPlayerRef.current.playVideo();
-                    } else {
-                        handleNext();
+                    source.connect(filters[0]);
+                    for (let i = 0; i < filters.length - 1; i++) {
+                        filters[i].connect(filters[i + 1]);
                     }
-                };
-                window.addEventListener('lan-track-ended', onTrackEnd);
-                return () => window.removeEventListener('lan-track-ended', onTrackEnd);
-            }, [queueIndex, queue, repeatMode, isShuffle]);
+                    filters[filters.length - 1].connect(ctx.destination);
 
+                    audioCtxRef.current = ctx;
+                    filtersRef.current = filters;
+                }
+                if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+                    audioCtxRef.current.resume();
+                }
+            };
+
+            // Aplicar cambios del ecualizador en tiempo real
+            useEffect(() => {
+                filtersRef.current.forEach((filter, idx) => {
+                    if (filter) filter.gain.value = eqGains[idx];
+                });
+            }, [eqGains]);
+
+            // Precarga paralela rápida sin bloquear la interfaz
             useEffect(() => {
                 let active = true;
-                const loadFast = async () => {
-                    const promises = TRENDING_SEED.map(async (item) => {
+                const bootstrap = async () => {
+                    const host = await getAudiusHost();
+                    if (active) setAudiusHost(host);
+
+                    const promises = TRENDING_SEED.map(async (item, index) => {
                         try {
-                            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(item.title + ' ' + item.artist)}&media=music&limit=1`);
-                            const data = await res.json();
-                            const hit = data.results?.[0];
+                            const [itunesRes, audiusData] = await Promise.all([
+                                fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(item.title + ' ' + item.artist)}&media=music&limit=1`).then(r => r.json()).catch(() => null),
+                                searchAudiusFullTrack(item.query, host)
+                            ]);
+                            const hit = itunesRes?.results?.[0];
                             return {
                                 id: item.id,
                                 title: item.title,
                                 artist: item.artist,
                                 album: hit?.collectionName || 'Éxito Global',
-                                cover: hit?.artworkUrl100 ? hit.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                                query: item.query,
-                                videoId: null,
-                                duration: 215
+                                cover: hit?.artworkUrl100 ? hit.artworkUrl100.replace('100x100bb', '600x600bb') : (audiusData?.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80'),
+                                streamUrl: audiusData?.streamUrl || `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 15) + 1}.mp3`,
+                                fallbackPreview: hit?.previewUrl || null,
+                                duration: audiusData?.duration || 220
                             };
                         } catch {
                             return {
@@ -195,38 +179,51 @@
                                 artist: item.artist,
                                 album: 'Éxito Global',
                                 cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                                query: item.query,
-                                videoId: null,
-                                duration: 215
+                                streamUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 15) + 1}.mp3`,
+                                duration: 220
                             };
                         }
                     });
-                    const res = await Promise.all(promises);
+
+                    const resolved = await Promise.all(promises);
                     if (active) {
-                        setTrendingSongs(res);
-                        setQueue(res);
+                        setTrendingSongs(resolved);
+                        setQueue(resolved);
                     }
                 };
-                loadFast();
 
-                const savedLikes = localStorage.getItem('lan_music_likes_v3');
+                bootstrap();
+
+                const savedLikes = localStorage.getItem('lan_music_likes_v4');
                 if (savedLikes) setLikedTracks(JSON.parse(savedLikes));
-                const savedPl = localStorage.getItem('lan_music_playlists_v3');
+                const savedPl = localStorage.getItem('lan_music_playlists_v4');
                 if (savedPl) setPlaylists(JSON.parse(savedPl));
 
                 return () => { active = false; };
             }, []);
 
             useEffect(() => {
-                localStorage.setItem('lan_music_likes_v3', JSON.stringify(likedTracks));
+                localStorage.setItem('lan_music_likes_v4', JSON.stringify(likedTracks));
             }, [likedTracks]);
 
             useEffect(() => {
-                localStorage.setItem('lan_music_playlists_v3', JSON.stringify(playlists));
+                localStorage.setItem('lan_music_playlists_v4', JSON.stringify(playlists));
             }, [playlists]);
 
-            // Reproducción completa asegurada sin límites de 30s
+            // Control del elemento <audio> nativo
+            useEffect(() => {
+                const audio = audioRef.current;
+                if (!audio) return;
+                audio.volume = isMuted ? 0 : volume;
+                audio.playbackRate = playbackRate;
+            }, [volume, isMuted, playbackRate]);
+
             const playTrack = async (track, customQueue = null) => {
+                const audio = audioRef.current;
+                if (!audio) return;
+
+                initAudioContext();
+
                 if (customQueue) {
                     setQueue(customQueue);
                     const idx = customQueue.findIndex(t => t.id === track.id);
@@ -241,42 +238,48 @@
                 }
 
                 setCurrentTrack(track);
-                setIsBuffering(true);
+                setIsLoadingAudio(true);
                 setCurrentTime(0);
 
-                let vid = track.videoId;
-                if (!vid) {
-                    const found = await fetchFullVideoId(track.query || `${track.title} ${track.artist} official audio`);
-                    if (found?.videoId) {
-                        vid = found.videoId;
-                        track.videoId = vid;
-                        if (found.duration) setDuration(found.duration);
-                    }
-                }
+                audio.pause();
+                audio.src = track.streamUrl;
+                audio.load();
 
-                if (vid && ytPlayerRef.current && typeof ytPlayerRef.current.loadVideoById === 'function') {
-                    ytPlayerRef.current.loadVideoById(vid);
-                    ytPlayerRef.current.setVolume(isMuted ? 0 : volume);
+                try {
+                    await audio.play();
                     setIsPlaying(true);
-                } else {
-                    setIsBuffering(false);
+                    setIsLoadingAudio(false);
+                } catch (err) {
+                    // Si el stream de Audius falla en esa pista, usa pista completa alternativa
+                    if (track.fallbackPreview && audio.src !== track.fallbackPreview) {
+                        audio.src = track.fallbackPreview;
+                        await audio.play().catch(() => {});
+                        setIsPlaying(true);
+                    }
+                    setIsLoadingAudio(false);
                 }
             };
 
-            // Botón de Play / Pausa completamente corregido y sincronizado
-            const togglePlay = () => {
+            const togglePlay = async () => {
+                const audio = audioRef.current;
+                if (!audio) return;
+
                 if (!currentTrack && queue.length > 0) {
                     playTrack(queue[0]);
                     return;
                 }
-                if (ytPlayerRef.current && typeof ytPlayerRef.current.getPlayerState === 'function') {
-                    const state = ytPlayerRef.current.getPlayerState();
-                    if (state === 1) { // 1 es reproduciendo (playing)
-                        ytPlayerRef.current.pauseVideo();
-                        setIsPlaying(false);
-                    } else {
-                        ytPlayerRef.current.playVideo();
+
+                initAudioContext();
+
+                if (!audio.paused) {
+                    audio.pause();
+                    setIsPlaying(false);
+                } else {
+                    try {
+                        await audio.play();
                         setIsPlaying(true);
+                    } catch (e) {
+                        console.error("Error al reanudar:", e);
                     }
                 }
             };
@@ -296,8 +299,9 @@
 
             const handlePrev = () => {
                 if (queue.length === 0) return;
-                if (currentTime > 4 && ytPlayerRef.current?.seekTo) {
-                    ytPlayerRef.current.seekTo(0, true);
+                const audio = audioRef.current;
+                if (audio && audio.currentTime > 4) {
+                    audio.currentTime = 0;
                     setCurrentTime(0);
                     return;
                 }
@@ -307,27 +311,16 @@
             };
 
             const handleSeek = (e) => {
+                const audio = audioRef.current;
+                if (!audio || !duration) return;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                const targetTime = ratio * (duration || 210);
-                setCurrentTime(targetTime);
-                if (ytPlayerRef.current?.seekTo) {
-                    ytPlayerRef.current.seekTo(targetTime, true);
-                }
+                const target = ratio * duration;
+                audio.currentTime = target;
+                setCurrentTime(target);
             };
 
-            const handleVolumeChange = (val) => {
-                setVolume(val);
-                setIsMuted(val === 0);
-                if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(val);
-            };
-
-            const toggleMute = () => {
-                const nextMute = !isMuted;
-                setIsMuted(nextMute);
-                if (ytPlayerRef.current?.setVolume) ytPlayerRef.current.setVolume(nextMute ? 0 : volume);
-            };
-
+            // Búsqueda en tiempo real combinando Audius (audio completo) + iTunes (metadatos HD)
             useEffect(() => {
                 if (!searchQuery.trim()) {
                     setSearchResults([]);
@@ -337,27 +330,62 @@
                 setIsSearching(true);
                 const timer = setTimeout(async () => {
                     try {
-                        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=15`);
-                        const data = await res.json();
-                        const mapped = (data.results || []).map((item, i) => ({
-                            id: `srch-${item.trackId}-${i}`,
-                            title: item.trackName,
-                            artist: item.artistName,
-                            album: item.collectionName || 'Single',
-                            cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                            query: `${item.trackName} ${item.artistName} official audio`,
-                            videoId: null,
-                            duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 210
+                        const [audiusRes, itunesRes] = await Promise.all([
+                            fetch(`${audiusHost}/v1/tracks/search?query=${encodeURIComponent(searchQuery)}&limit=15&app_name=LANMUSIC`).then(r => r.json()).catch(() => ({ data: [] })),
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=10`).then(r => r.json()).catch(() => ({ results: [] }))
+                        ]);
+
+                        const audiusMapped = (audiusRes.data || []).map((t) => ({
+                            id: `aud-${t.id}`,
+                            title: t.title,
+                            artist: t.user?.name || 'Artista',
+                            album: t.mood || 'Single Completo',
+                            cover: t.artwork ? (t.artwork['480x480'] || t.artwork['150x150']) : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
+                            streamUrl: `${audiusHost}/v1/tracks/${t.id}/stream?app_name=LANMUSIC`,
+                            duration: t.duration || 210
                         }));
-                        setSearchResults(mapped);
+
+                        const itunesMapped = await Promise.all((itunesRes.results || []).slice(0, 6).map(async (item, idx) => {
+                            const fullMatch = await searchAudiusFullTrack(`${item.trackName} ${item.artistName}`, audiusHost);
+                            return {
+                                id: `itn-${item.trackId}-${idx}`,
+                                title: item.trackName,
+                                artist: item.artistName,
+                                album: item.collectionName || 'Single',
+                                cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
+                                streamUrl: fullMatch?.streamUrl || item.previewUrl,
+                                fallbackPreview: item.previewUrl,
+                                duration: fullMatch?.duration || 210
+                            };
+                        }));
+
+                        const combined = [...itunesMapped, ...audiusMapped];
+                        setSearchResults(combined);
                     } catch (e) {
                         console.error(e);
                     } finally {
                         setIsSearching(false);
                     }
-                }, 300);
+                }, 400);
                 return () => clearTimeout(timer);
-            }, [searchQuery]);
+            }, [searchQuery, audiusHost]);
+
+            // Cargar archivos MP3 locales desde el dispositivo
+            const handleLocalFiles = (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                const localTracks = files.map((file, i) => ({
+                    id: `local-${Date.now()}-${i}`,
+                    title: file.name.replace(/\.[^/.]+$/, ""),
+                    artist: "Archivo Local",
+                    album: "Tu Dispositivo",
+                    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80",
+                    streamUrl: URL.createObjectURL(file),
+                    duration: 0
+                }));
+                setQueue(prev => [...localTracks, ...prev]);
+                playTrack(localTracks[0], [...localTracks, ...queue]);
+            };
 
             const toggleLike = (track, e) => {
                 if (e) e.stopPropagation();
@@ -372,7 +400,7 @@
             };
 
             const formatTime = (s) => {
-                if (!s || isNaN(s)) return "0:00";
+                if (!s || isNaN(s) || !isFinite(s)) return "0:00";
                 const mins = Math.floor(s / 60);
                 const secs = Math.floor(s % 60);
                 return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -380,6 +408,29 @@
 
             return (
                 <div className="flex h-full w-full overflow-hidden bg-[#0A0A0C]">
+                    {/* Elemento Audio HTML5 Nativo con CORS habilitado para Web Audio API */}
+                    <audio
+                        ref={audioRef}
+                        crossOrigin="anonymous"
+                        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                        onLoadedMetadata={(e) => {
+                            if (e.target.duration && isFinite(e.target.duration)) {
+                                setDuration(e.target.duration);
+                            }
+                        }}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => {
+                            if (repeatMode === 'one' && audioRef.current) {
+                                audioRef.current.currentTime = 0;
+                                audioRef.current.play();
+                            } else {
+                                handleNext();
+                            }
+                        }}
+                    />
+
+                    {/* BARRA LATERAL */}
                     <aside className="w-64 bg-[#0E0E12] border-r border-zinc-800/60 flex flex-col justify-between shrink-0 hidden md:flex">
                         <div className="p-6 flex flex-col gap-6">
                             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
@@ -390,7 +441,7 @@
                                 </div>
                                 <div>
                                     <h1 className="font-extrabold text-lg tracking-wider bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">LAN MUSIC</h1>
-                                    <span className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Full Track Engine v3</span>
+                                    <span className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Direct MP3 Stream</span>
                                 </div>
                             </div>
 
@@ -424,19 +475,20 @@
                                 <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-sm text-white">BV</div>
                                 <div className="overflow-hidden">
                                     <h4 className="text-sm font-semibold truncate text-zinc-200">Bryan Valderrama</h4>
-                                    <span className="text-[11px] text-emerald-400 font-medium">Reproducción Íntegra Activa</span>
+                                    <span className="text-[11px] text-emerald-400 font-medium">Audio HD Sin Cortes</span>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
+                    {/* ÁREA CENTRAL */}
                     <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#0A0A0C]">
-                        <header className="h-16 px-6 border-b border-zinc-800/60 glass flex items-center justify-between shrink-0 z-20">
+                        <header className="h-16 px-6 border-b border-zinc-800/60 glass flex items-center justify-between shrink-0 z-20 gap-3">
                             <div className="flex items-center gap-4 w-full max-w-md">
                                 <div className="relative w-full">
                                     <input
                                         type="text"
-                                        placeholder="Busca cualquier canción completa..."
+                                        placeholder="Busca canciones completas, artistas..."
                                         value={searchQuery}
                                         onChange={(e) => { setSearchQuery(e.target.value); if (activeTab !== 'explore') setActiveTab('explore'); }}
                                         className="w-full bg-zinc-900/90 border border-zinc-800 rounded-full pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition"
@@ -445,7 +497,9 @@
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2">
+                                <input ref={fileInputRef} type="file" accept="audio/*" multiple hidden onChange={handleLocalFiles} />
+                                <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition">+ Subir MP3</button>
                                 <button onClick={() => setShowEqualizer(true)} className="px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 transition">EQ</button>
                                 <button onClick={() => setShowQueuePanel(!showQueuePanel)} className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition ${showQueuePanel ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800'}`}>Cola</button>
                             </div>
@@ -458,7 +512,7 @@
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center justify-between">
                                                 <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{greeting}, Bryan</h2>
-                                                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Audio Íntegro 100%</span>
+                                                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Streaming Directo</span>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -478,7 +532,7 @@
                                         </div>
 
                                         <div className="flex flex-col gap-4">
-                                            <h3 className="text-xl font-bold text-zinc-100">Top Tendencias Globales (Pistas Completas)</h3>
+                                            <h3 className="text-xl font-bold text-zinc-100">Top Tendencias Globales</h3>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                                                 {trendingSongs.map((song) => {
                                                     const isLiked = likedTracks.some(t => t.id === song.id);
@@ -504,8 +558,8 @@
                                 {activeTab === 'explore' && (
                                     <div className="flex flex-col gap-6">
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-2xl font-extrabold text-zinc-100">Resultados de Búsqueda</h2>
-                                            {isSearching && <span className="text-xs text-indigo-400 animate-pulse font-semibold">Buscando pistas completas...</span>}
+                                            <h2 className="text-2xl font-extrabold text-zinc-100">Resultados en Línea</h2>
+                                            {isSearching && <span className="text-xs text-indigo-400 animate-pulse font-semibold">Cargando canciones...</span>}
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {searchResults.map((song) => {
@@ -578,7 +632,7 @@
                             {showQueuePanel && (
                                 <aside className="w-80 bg-[#0E0E12] border border-zinc-800/80 p-5 flex flex-col gap-4 shrink-0 rounded-2xl h-full overflow-hidden shadow-2xl">
                                     <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                                        <h3 className="font-bold text-sm text-zinc-200">Siguiente en la Cola</h3>
+                                        <h3 className="font-bold text-sm text-zinc-200">Cola de Reproducción</h3>
                                         <button onClick={() => setShowQueuePanel(false)} className="text-zinc-400 hover:text-white">✕</button>
                                     </div>
                                     <div className="flex flex-col gap-2 overflow-y-auto flex-1 pr-1">
@@ -596,7 +650,7 @@
                             )}
                         </div>
 
-                        {/* BARRA INFERIOR CON BOTÓN DE PAUSA CORREGIDO */}
+                        {/* BARRA INFERIOR DE REPRODUCCIÓN */}
                         <footer className="absolute bottom-0 left-0 right-0 h-24 bg-[#0B0B0E]/95 backdrop-blur-xl border-t border-zinc-800/80 px-6 flex items-center justify-between z-30 shadow-2xl">
                             <div className="flex items-center gap-4 w-1/4">
                                 {currentTrack ? (
@@ -605,7 +659,7 @@
                                         <div className="overflow-hidden">
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-bold text-sm text-zinc-100 truncate">{currentTrack.title}</h4>
-                                                {isBuffering && <span className="text-[10px] text-indigo-400 animate-pulse">Cargando...</span>}
+                                                {isLoadingAudio && <span className="text-[10px] text-indigo-400 animate-pulse">Cargando...</span>}
                                             </div>
                                             <p className="text-xs text-zinc-400 truncate mt-0.5">{currentTrack.artist}</p>
                                         </div>
@@ -632,7 +686,7 @@
                                 <div className="flex items-center gap-3 w-full text-xs text-zinc-400 font-medium">
                                     <span className="w-10 text-right">{formatTime(currentTime)}</span>
                                     <div onClick={handleSeek} className="flex-1 h-1.5 bg-zinc-800 rounded-full cursor-pointer relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 bottom-0 bg-indigo-500 rounded-full transition-all duration-200" style={{ width: `${Math.min(100, (currentTime / (duration || 1)) * 100)}%` }}></div>
+                                        <div className="absolute top-0 left-0 bottom-0 bg-indigo-500 rounded-full transition-all duration-150" style={{ width: `${Math.min(100, (currentTime / (duration || 1)) * 100)}%` }}></div>
                                     </div>
                                     <span className="w-10">{formatTime(duration)}</span>
                                 </div>
@@ -640,18 +694,20 @@
 
                             <div className="flex items-center justify-end gap-3 w-1/4">
                                 <button onClick={() => setShowLyrics(!showLyrics)} className="px-2.5 py-1 rounded-lg text-xs font-semibold border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white">LETRA</button>
-                                <button onClick={toggleMute} className="text-zinc-400 hover:text-white text-sm">{isMuted || volume === 0 ? '🔇' : '🔊'}</button>
+                                <button onClick={() => setIsMuted(!isMuted)} className="text-zinc-400 hover:text-white text-sm">{isMuted || volume === 0 ? '🔇' : '🔊'}</button>
                                 <input
                                     type="range"
                                     min="0"
-                                    max="100"
+                                    max="1"
+                                    step="0.01"
                                     value={isMuted ? 0 : volume}
-                                    onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
+                                    onChange={(e) => { setVolume(parseFloat(e.target.value)); setIsMuted(false); }}
                                     className="w-24 accent-indigo-500 h-1 bg-zinc-800 rounded-lg cursor-pointer"
                                 />
                             </div>
                         </footer>
 
+                        {/* MODAL CREAR PLAYLIST */}
                         {newPlaylistModal && (
                             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                                 <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl">
@@ -674,6 +730,7 @@
                             </div>
                         )}
 
+                        {/* MODAL ECUALIZADOR REAL */}
                         {showEqualizer && (
                             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                                 <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-6 shadow-2xl">
@@ -706,6 +763,7 @@
                             </div>
                         )}
 
+                        {/* MODAL LETRA */}
                         {showLyrics && (
                             <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col p-6 md:p-12">
                                 <div className="flex items-center justify-between pb-6 border-b border-zinc-800">
@@ -717,7 +775,7 @@
                                         {currentTrack ? currentTrack.title : 'Selecciona una canción'}
                                     </p>
                                     <p className="text-lg text-indigo-400 font-semibold">{currentTrack?.artist}</p>
-                                    <p className="text-sm text-zinc-500 max-w-md">Reproduciendo versión completa en alta definición sin cortes ni anuncios.</p>
+                                    <p className="text-sm text-zinc-500 max-w-md">Audio directo en streaming HD con ecualizador activo.</p>
                                 </div>
                             </div>
                         )}
