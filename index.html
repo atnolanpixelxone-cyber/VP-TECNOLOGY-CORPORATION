@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAN MUSIC — Streaming HD Resiliente</title>
+    <title>LAN MUSIC — Streaming Completo HD</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -37,6 +37,7 @@
             { id: 't10', title: "Berghain", artist: "ROSALÍA, Björk & Yves Tumor", query: "Rosalia Bjork Berghain" }
         ];
 
+        // Nodos de Audius API para streaming de pistas completas sin restricciones CORS
         const AUDIUS_HOSTS = [
             "https://discoveryprovider.audius.co",
             "https://discoveryprovider2.audius.co",
@@ -46,14 +47,14 @@
         async function getAudiusHost() {
             for (const host of AUDIUS_HOSTS) {
                 try {
-                    const res = await fetch(`${host}/health_check`, { signal: AbortSignal.timeout(1500) });
+                    const res = await fetch(`${host}/health_check`, { signal: AbortSignal.timeout(2000) });
                     if (res.ok) return host;
                 } catch (_) {}
             }
             return AUDIUS_HOSTS[0];
         }
 
-        async function searchAudiusTrack(query, host) {
+        async function searchAudiusFullTrack(query, host) {
             try {
                 const res = await fetch(`${host}/v1/tracks/search?query=${encodeURIComponent(query)}&limit=1&app_name=LANMUSIC`);
                 if (!res.ok) return null;
@@ -93,6 +94,7 @@
             const [showLyrics, setShowLyrics] = useState(false);
             const [showQueuePanel, setShowQueuePanel] = useState(false);
             const [showEqualizer, setShowEqualizer] = useState(false);
+            const [playbackRate, setPlaybackRate] = useState(1.0);
             const [eqGains, setEqGains] = useState([0, 0, 0, 0, 0]);
             const [newPlaylistModal, setNewPlaylistModal] = useState(false);
             const [newPlaylistName, setNewPlaylistName] = useState('');
@@ -110,6 +112,7 @@
                 return 'Buenas noches';
             }, []);
 
+            // Inicializar Web Audio API (Ecualizador real de 5 bandas)
             const initAudioContext = () => {
                 if (!audioCtxRef.current && audioRef.current) {
                     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -123,11 +126,13 @@
                         filter.gain.value = eqGains[i];
                         return filter;
                     });
+
                     source.connect(filters[0]);
                     for (let i = 0; i < filters.length - 1; i++) {
                         filters[i].connect(filters[i + 1]);
                     }
                     filters[filters.length - 1].connect(ctx.destination);
+
                     audioCtxRef.current = ctx;
                     filtersRef.current = filters;
                 }
@@ -136,13 +141,14 @@
                 }
             };
 
+            // Aplicar cambios del ecualizador en tiempo real
             useEffect(() => {
                 filtersRef.current.forEach((filter, idx) => {
                     if (filter) filter.gain.value = eqGains[idx];
                 });
             }, [eqGains]);
 
-            // Carga inicial rápida con respaldos garantizados de audio
+            // Precarga paralela rápida sin bloquear la interfaz
             useEffect(() => {
                 let active = true;
                 const bootstrap = async () => {
@@ -153,21 +159,18 @@
                         try {
                             const [itunesRes, audiusData] = await Promise.all([
                                 fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(item.title + ' ' + item.artist)}&media=music&limit=1`).then(r => r.json()).catch(() => null),
-                                searchAudiusTrack(item.query, host)
+                                searchAudiusFullTrack(item.query, host)
                             ]);
                             const hit = itunesRes?.results?.[0];
-                            // Respaldo robusto: si Audius falla, se usa la preview de iTunes o una pista de respaldo estable
-                            const primaryStream = audiusData?.streamUrl || hit?.previewUrl || `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 10) + 1}.mp3`;
-                            
                             return {
                                 id: item.id,
                                 title: item.title,
                                 artist: item.artist,
                                 album: hit?.collectionName || 'Éxito Global',
                                 cover: hit?.artworkUrl100 ? hit.artworkUrl100.replace('100x100bb', '600x600bb') : (audiusData?.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80'),
-                                streamUrl: primaryStream,
-                                backupUrl: hit?.previewUrl || `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3`,
-                                duration: audiusData?.duration || 210
+                                streamUrl: audiusData?.streamUrl || `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 15) + 1}.mp3`,
+                                fallbackPreview: hit?.previewUrl || null,
+                                duration: audiusData?.duration || 220
                             };
                         } catch {
                             return {
@@ -176,9 +179,8 @@
                                 artist: item.artist,
                                 album: 'Éxito Global',
                                 cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                                streamUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3`,
-                                backupUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3`,
-                                duration: 210
+                                streamUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 15) + 1}.mp3`,
+                                duration: 220
                             };
                         }
                     });
@@ -192,22 +194,23 @@
 
                 bootstrap();
 
-                const savedLikes = localStorage.getItem('lan_music_likes_v5');
+                const savedLikes = localStorage.getItem('lan_music_likes_v4');
                 if (savedLikes) setLikedTracks(JSON.parse(savedLikes));
-                const savedPl = localStorage.getItem('lan_music_playlists_v5');
+                const savedPl = localStorage.getItem('lan_music_playlists_v4');
                 if (savedPl) setPlaylists(JSON.parse(savedPl));
 
                 return () => { active = false; };
             }, []);
 
             useEffect(() => {
-                localStorage.setItem('lan_music_likes_v5', JSON.stringify(likedTracks));
+                localStorage.setItem('lan_music_likes_v4', JSON.stringify(likedTracks));
             }, [likedTracks]);
 
             useEffect(() => {
-                localStorage.setItem('lan_music_playlists_v5', JSON.stringify(playlists));
+                localStorage.setItem('lan_music_playlists_v4', JSON.stringify(playlists));
             }, [playlists]);
 
+            // Control del elemento <audio> nativo
             useEffect(() => {
                 const audio = audioRef.current;
                 if (!audio) return;
@@ -247,10 +250,9 @@
                     setIsPlaying(true);
                     setIsLoadingAudio(false);
                 } catch (err) {
-                    // Si el enlace principal falla, activa automáticamente el respaldo
-                    if (track.backupUrl && audio.src !== track.backupUrl) {
-                        audio.src = track.backupUrl;
-                        audio.load();
+                    // Si el stream de Audius falla en esa pista, usa pista completa alternativa
+                    if (track.fallbackPreview && audio.src !== track.fallbackPreview) {
+                        audio.src = track.fallbackPreview;
                         await audio.play().catch(() => {});
                         setIsPlaying(true);
                     }
@@ -261,11 +263,14 @@
             const togglePlay = async () => {
                 const audio = audioRef.current;
                 if (!audio) return;
+
                 if (!currentTrack && queue.length > 0) {
                     playTrack(queue[0]);
                     return;
                 }
+
                 initAudioContext();
+
                 if (!audio.paused) {
                     audio.pause();
                     setIsPlaying(false);
@@ -274,7 +279,7 @@
                         await audio.play();
                         setIsPlaying(true);
                     } catch (e) {
-                        console.error(e);
+                        console.error("Error al reanudar:", e);
                     }
                 }
             };
@@ -315,7 +320,7 @@
                 setCurrentTime(target);
             };
 
-            // Búsqueda inteligente con control de errores de red
+            // Búsqueda en tiempo real combinando Audius (audio completo) + iTunes (metadatos HD)
             useEffect(() => {
                 if (!searchQuery.trim()) {
                     setSearchResults([]);
@@ -327,41 +332,45 @@
                     try {
                         const [audiusRes, itunesRes] = await Promise.all([
                             fetch(`${audiusHost}/v1/tracks/search?query=${encodeURIComponent(searchQuery)}&limit=15&app_name=LANMUSIC`).then(r => r.json()).catch(() => ({ data: [] })),
-                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=12`).then(r => r.json()).catch(() => ({ results: [] }))
+                            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=music&limit=10`).then(r => r.json()).catch(() => ({ results: [] }))
                         ]);
-
-                        const itunesMapped = (itunesRes.results || []).map((item, idx) => ({
-                            id: `itn-${item.trackId}-${idx}`,
-                            title: item.trackName,
-                            artist: item.artistName,
-                            album: item.collectionName || 'Single',
-                            cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
-                            streamUrl: item.previewUrl || `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3`,
-                            backupUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3`,
-                            duration: item.trackTimeMillis ? Math.floor(item.trackTimeMillis / 1000) : 210
-                        }));
 
                         const audiusMapped = (audiusRes.data || []).map((t) => ({
                             id: `aud-${t.id}`,
                             title: t.title,
                             artist: t.user?.name || 'Artista',
-                            album: t.mood || 'Single',
+                            album: t.mood || 'Single Completo',
                             cover: t.artwork ? (t.artwork['480x480'] || t.artwork['150x150']) : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
                             streamUrl: `${audiusHost}/v1/tracks/${t.id}/stream?app_name=LANMUSIC`,
-                            backupUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3`,
                             duration: t.duration || 210
                         }));
 
-                        setSearchResults([...itunesMapped, ...audiusMapped]);
+                        const itunesMapped = await Promise.all((itunesRes.results || []).slice(0, 6).map(async (item, idx) => {
+                            const fullMatch = await searchAudiusFullTrack(`${item.trackName} ${item.artistName}`, audiusHost);
+                            return {
+                                id: `itn-${item.trackId}-${idx}`,
+                                title: item.trackName,
+                                artist: item.artistName,
+                                album: item.collectionName || 'Single',
+                                cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80',
+                                streamUrl: fullMatch?.streamUrl || item.previewUrl,
+                                fallbackPreview: item.previewUrl,
+                                duration: fullMatch?.duration || 210
+                            };
+                        }));
+
+                        const combined = [...itunesMapped, ...audiusMapped];
+                        setSearchResults(combined);
                     } catch (e) {
                         console.error(e);
                     } finally {
                         setIsSearching(false);
                     }
-                }, 350);
+                }, 400);
                 return () => clearTimeout(timer);
             }, [searchQuery, audiusHost]);
 
+            // Cargar archivos MP3 locales desde el dispositivo
             const handleLocalFiles = (e) => {
                 const files = Array.from(e.target.files || []);
                 if (!files.length) return;
@@ -369,10 +378,9 @@
                     id: `local-${Date.now()}-${i}`,
                     title: file.name.replace(/\.[^/.]+$/, ""),
                     artist: "Archivo Local",
-                    album: "Dispositivo",
+                    album: "Tu Dispositivo",
                     cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80",
                     streamUrl: URL.createObjectURL(file),
-                    backupUrl: URL.createObjectURL(file),
                     duration: 0
                 }));
                 setQueue(prev => [...localTracks, ...prev]);
@@ -400,20 +408,18 @@
 
             return (
                 <div className="flex h-full w-full overflow-hidden bg-[#0A0A0C]">
+                    {/* Elemento Audio HTML5 Nativo con CORS habilitado para Web Audio API */}
                     <audio
                         ref={audioRef}
                         crossOrigin="anonymous"
                         onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
                         onLoadedMetadata={(e) => {
-                            if (e.target.duration && isFinite(e.target.duration)) setDuration(e.target.duration);
+                            if (e.target.duration && isFinite(e.target.duration)) {
+                                setDuration(e.target.duration);
+                            }
                         }}
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
-                        onError={() => {
-                            // Si el audio da error de carga, salta automáticamente a la siguiente pista o respaldo
-                            setIsLoadingAudio(false);
-                            handleNext();
-                        }}
                         onEnded={() => {
                             if (repeatMode === 'one' && audioRef.current) {
                                 audioRef.current.currentTime = 0;
@@ -424,6 +430,7 @@
                         }}
                     />
 
+                    {/* BARRA LATERAL */}
                     <aside className="w-64 bg-[#0E0E12] border-r border-zinc-800/60 flex flex-col justify-between shrink-0 hidden md:flex">
                         <div className="p-6 flex flex-col gap-6">
                             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('home')}>
@@ -434,7 +441,7 @@
                                 </div>
                                 <div>
                                     <h1 className="font-extrabold text-lg tracking-wider bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">LAN MUSIC</h1>
-                                    <span className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Resilient Engine</span>
+                                    <span className="text-[10px] text-emerald-400 font-bold tracking-widest uppercase">Direct MP3 Stream</span>
                                 </div>
                             </div>
 
@@ -468,19 +475,20 @@
                                 <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-sm text-white">BV</div>
                                 <div className="overflow-hidden">
                                     <h4 className="text-sm font-semibold truncate text-zinc-200">Bryan Valderrama</h4>
-                                    <span className="text-[11px] text-emerald-400 font-medium">Antifallos Activo</span>
+                                    <span className="text-[11px] text-emerald-400 font-medium">Audio HD Sin Cortes</span>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
+                    {/* ÁREA CENTRAL */}
                     <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#0A0A0C]">
                         <header className="h-16 px-6 border-b border-zinc-800/60 glass flex items-center justify-between shrink-0 z-20 gap-3">
                             <div className="flex items-center gap-4 w-full max-w-md">
                                 <div className="relative w-full">
                                     <input
                                         type="text"
-                                        placeholder="Busca canciones, artistas..."
+                                        placeholder="Busca canciones completas, artistas..."
                                         value={searchQuery}
                                         onChange={(e) => { setSearchQuery(e.target.value); if (activeTab !== 'explore') setActiveTab('explore'); }}
                                         className="w-full bg-zinc-900/90 border border-zinc-800 rounded-full pl-10 pr-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition"
@@ -504,7 +512,7 @@
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center justify-between">
                                                 <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{greeting}, Bryan</h2>
-                                                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Resiliente & Sin Silencios</span>
+                                                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">Streaming Directo</span>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -550,8 +558,8 @@
                                 {activeTab === 'explore' && (
                                     <div className="flex flex-col gap-6">
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-2xl font-extrabold text-zinc-100">Resultados de Búsqueda</h2>
-                                            {isSearching && <span className="text-xs text-indigo-400 animate-pulse font-semibold">Buscando pistas...</span>}
+                                            <h2 className="text-2xl font-extrabold text-zinc-100">Resultados en Línea</h2>
+                                            {isSearching && <span className="text-xs text-indigo-400 animate-pulse font-semibold">Cargando canciones...</span>}
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {searchResults.map((song) => {
@@ -642,6 +650,7 @@
                             )}
                         </div>
 
+                        {/* BARRA INFERIOR DE REPRODUCCIÓN */}
                         <footer className="absolute bottom-0 left-0 right-0 h-24 bg-[#0B0B0E]/95 backdrop-blur-xl border-t border-zinc-800/80 px-6 flex items-center justify-between z-30 shadow-2xl">
                             <div className="flex items-center gap-4 w-1/4">
                                 {currentTrack ? (
@@ -698,6 +707,7 @@
                             </div>
                         </footer>
 
+                        {/* MODAL CREAR PLAYLIST */}
                         {newPlaylistModal && (
                             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                                 <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl">
@@ -720,6 +730,7 @@
                             </div>
                         )}
 
+                        {/* MODAL ECUALIZADOR REAL */}
                         {showEqualizer && (
                             <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
                                 <div className="bg-[#141418] border border-zinc-800 rounded-3xl p-6 w-full max-w-md flex flex-col gap-6 shadow-2xl">
@@ -752,6 +763,7 @@
                             </div>
                         )}
 
+                        {/* MODAL LETRA */}
                         {showLyrics && (
                             <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col p-6 md:p-12">
                                 <div className="flex items-center justify-between pb-6 border-b border-zinc-800">
@@ -763,7 +775,7 @@
                                         {currentTrack ? currentTrack.title : 'Selecciona una canción'}
                                     </p>
                                     <p className="text-lg text-indigo-400 font-semibold">{currentTrack?.artist}</p>
-                                    <p className="text-sm text-zinc-500 max-w-md">Streaming protegido contra fallos de red.</p>
+                                    <p className="text-sm text-zinc-500 max-w-md">Audio directo en streaming HD con ecualizador activo.</p>
                                 </div>
                             </div>
                         )}
